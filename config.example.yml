@@ -1,0 +1,5 @@
+session_manager:
+  window_manager_startup_script: /etc/webx/startwm.sh
+  xauthority_configuration_directory: /run/user
+  xorg_config_file: /data/xorg-dummy.conf
+  pam_service: webx

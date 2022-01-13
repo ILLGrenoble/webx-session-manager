@@ -1,31 +1,25 @@
-use pam_client::{Context, Flag};
 use pam_client::conv_mock::Conversation;
 use pam_client::env_list::EnvList;
+use pam_client::{Context, Flag};
 
-use crate::common::{ApplicationError};
 use crate::authentication::Credentials;
+use crate::common::{ApplicationError, AuthenticationSettings};
 
 pub struct Authenticator {
-    service: String,
+    settings: AuthenticationSettings,
 }
 
 impl Authenticator {
-    pub fn new(service: String) -> Self {
+    pub fn new(settings: AuthenticationSettings) -> Self {
         Self {
-            service
+            settings
         }
     }
-
+  
     pub fn authenticate(&self, credentials: &Credentials) -> Result<EnvList, ApplicationError> {
-        let conversation = Conversation::with_credentials(
-            credentials.username(),
-            credentials.password(),
-        );
-        let mut context = Context::new(
-            self.service.as_str(),
-            None,
-            conversation,
-        )?;
+        let conversation =
+            Conversation::with_credentials(credentials.username(), credentials.password());
+        let mut context = Context::new(self.settings.service(), None, conversation)?;
 
         context.authenticate(Flag::NONE)?;
         context.acct_mgmt(Flag::NONE)?;

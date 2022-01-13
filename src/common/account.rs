@@ -1,5 +1,5 @@
 use nix::unistd::User;
-
+use std::fmt;
 pub struct Account {
     username: String,
     home: String,
@@ -46,3 +46,8 @@ impl Account {
 }
 
 
+impl fmt::Display for Account {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "username = {}, home = {} uid = {}, gid = {}", self.username, self.home, self.uid, self.gid)
+    }
+}

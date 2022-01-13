@@ -7,7 +7,7 @@ impl Credentials {
     pub fn new(username: String, password: String) -> Self {
         Credentials { username, password }
     }
-    
+
     pub fn username(&self) -> &str {
         &self.username
     }

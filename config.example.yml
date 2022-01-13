@@ -1,5 +1,11 @@
-session_manager:
-  window_manager_startup_script: /etc/webx/startwm.sh
-  xauthority_configuration_directory: /run/user
-  xorg_config_file: /data/xorg-dummy.conf
-  pam_service: webx
+logging:
+  level: debug
+  path: /var/log/webx
+transport:
+  ipc: /tmp/webx-session-manager.ipc
+authentication:
+  service: login
+xorg:
+  lock_path: /tmp
+  authority_path: /run/user
+  display_offset: 60

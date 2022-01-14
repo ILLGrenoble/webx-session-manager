@@ -1,11 +1,27 @@
 logging:
+  # trace, debug, info or error
   level: debug
+  # path to store the sesion manager log file
   path: /var/log/webx
+
 transport:
+  # path to the zmq ipc socket file. 
+  # we recommend that you leave the default value
   ipc: /tmp/webx-session-manager.ipc
+
 authentication:
+  # the pam service to use for authenticating
   service: login
+  
 xorg:
+  # path to where the x lock files are stored
   lock_path: /tmp
+  # path to where the xauthority files should be stored
   authority_path: /run/user
+  # path for the xorg configuration
+  config_path: /etc/webx/webx-session-manager/xorg.conf
+  # ext available display will start from this offset
   display_offset: 60
+  # script to launch the window manager of your choice
+  window_manager: /etc/webx/webx-session-manager/startwm.sh
+  

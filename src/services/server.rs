@@ -106,21 +106,19 @@ impl Server {
                 Response::Error{ message: format!("Error creating session: {}", error.to_string()) }
             }
         };
-        if let Some(json) = self.encoder.encode(response) {
-            if let Err(error) = rep_socket.send(&json[..], 0) {
-                error!("Failed to send response message: {}", error);
-            }
+        let json  = self.encoder.encode(response).unwrap_or("".into());
+        if let Err(error) = rep_socket.send(&json[..], 0) {
+            error!("Failed to send response message: {}", error);
         }
-    }
+}
 
     fn handle_who_request(&self, rep_socket: &zmq::Socket) {
         debug!("Listing sessions");
         let sessions = self.session_service.get_all();
         let response = Response::Who(sessions);
-        if let Some(json) = self.encoder.encode(response) {
-            if let Err(error) = rep_socket.send(&json[..], 0) {
-                error!("Failed to send response message: {}", error);
-            }
+        let json  = self.encoder.encode(response).unwrap_or("".into());
+        if let Err(error) = rep_socket.send(&json[..], 0) {
+            error!("Failed to send response message: {}", error);
         }
     }
 

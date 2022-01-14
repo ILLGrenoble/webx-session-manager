@@ -6,6 +6,7 @@ extern crate dotenv;
 
 
 use env_logger::Env;
+use nix::unistd::Uid;
 use structopt::StructOpt;
 use webx_session_manager::{common::{ApplicationError, Settings}, services::Server};
 
@@ -20,6 +21,13 @@ struct Opt {
 }
 
 pub fn main() -> Result<(), ApplicationError> {
+
+    if !Uid::effective().is_root() {
+        eprintln!("You must run this executable with root permissions");
+        std::process::exit(1);
+
+    }
+    
     if let Err(error) = run() {
         eprintln!("There was an error launching webx session manger: {}", error);
     }

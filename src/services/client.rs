@@ -10,7 +10,6 @@ pub struct Client {
 impl Client {
 
     pub fn new(ipc: String) -> Result<Self, ApplicationError> {
-
         let context = zmq::Context::new();
         let socket = context.socket(zmq::REQ)?;
         let address = format!("ipc://{}", ipc);
@@ -21,6 +20,8 @@ impl Client {
         })
     }
 
+
+    /// get a list of active sessions
     pub fn who(&self) -> Result<(), ApplicationError> {
         if let Ok(response) =  self.send(Request::Who) {
             match response {
@@ -77,8 +78,8 @@ impl Client {
         Ok(())
     }
 
-    pub fn terminate(&self, username: String) {
-        println!("Terminating session for user: {}", username);
+    pub fn terminate(&self, _: String) {
+        eprintln!("Not implemented for the moment");
     }
 
     fn send(&self, request: Request) -> Result<Response, ApplicationError> {
@@ -104,4 +105,5 @@ impl Client {
             Err(_) => None,
         }
     }
+    
 }

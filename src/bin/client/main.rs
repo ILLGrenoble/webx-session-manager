@@ -27,7 +27,7 @@ pub fn main() -> Result<(), ApplicationError> {
         Command::Who => client.who()?,
         Command::Login { username, password } => {
             let credentials = Credentials::new(username, password);
-            client.login(credentials);
+            client.login(credentials)?;
         }
         Command::Terminate { username } => client.terminate(username)
     }

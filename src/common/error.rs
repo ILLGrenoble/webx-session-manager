@@ -97,7 +97,7 @@ impl From<pam_client::Error> for ApplicationError {
 
 impl From<io::Error> for ApplicationError {
     fn from(error: io::Error) -> Self {
-        let message = format!("io: {}", error);
+        let message = format!("{}", error);
         ApplicationError::transport(message)
     }
 }
@@ -112,7 +112,7 @@ impl From<zmq::Error> for ApplicationError {
 
 impl From<ConfigError> for ApplicationError {
     fn from(error: ConfigError) -> Self {
-        let message = format!("configuration: {}", error);
+        let message = format!("{}", error);
         ApplicationError::configuration(message)
     } 
 }

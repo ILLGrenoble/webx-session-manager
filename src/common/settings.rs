@@ -22,7 +22,9 @@ pub struct TransportSettings {
 pub struct XorgSettings {
     lock_path: String,
     authority_path: String,
-    display_offset: u32
+    config_path: String,
+    display_offset: u32,
+    window_manager: String
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -68,6 +70,14 @@ impl XorgSettings {
         self.display_offset
     }
 
+    pub fn window_manager(&self) -> &str {
+        &self.window_manager
+    }
+
+    pub fn config_path(&self) -> &str {
+        &self.config_path
+    }
+
 }
 
 impl TransportSettings {
@@ -109,7 +119,6 @@ impl Settings {
     pub fn xorg(&self) -> &XorgSettings {
         &self.xorg
     }
-
 
     fn get_config_path(config_path: &str) -> &str {
         if config_path.is_empty() {
@@ -153,6 +162,11 @@ impl Settings {
 
         if self.xorg.lock_path.is_empty() {
             eprintln!("Please specify a path for where to look for x lock files (i.e. /tmp/.X11-unix");
+            return false;
+        }
+
+        if self.xorg.window_manager.is_empty() {
+            eprintln!("Please specify a path to a command that will launch your chosen session manager");
             return false;
         }
 

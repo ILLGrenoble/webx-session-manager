@@ -98,7 +98,7 @@ impl Settings {
         let mut settings_raw = config::Config::default();
 
         settings_raw.merge(config::File::new(config_path, config::FileFormat::Yaml))?;
-        settings_raw.merge(config::Environment::with_prefix("WEBX_SESSION_MANAGER").separator("_"))?;
+        settings_raw.merge(config::Environment::with_prefix("WEBX_SESSION_MANAGER").separator("__"))?;
 
         settings_raw.try_into().map_err(|error| error.into())
     }

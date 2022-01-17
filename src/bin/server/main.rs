@@ -9,7 +9,7 @@ use env_logger::Env;
 use nix::unistd::Uid;
 use structopt::StructOpt;
 use webx_session_manager::{common::{ApplicationError, Settings}, services::Server};
-
+use dotenv::dotenv;
 
 
 #[derive(StructOpt, Debug)]
@@ -21,6 +21,7 @@ struct Opt {
 }
 
 pub fn main() -> Result<(), ApplicationError> {
+    dotenv().ok();
 
     if !Uid::effective().is_root() {
         eprintln!("You must run this executable with root permissions");

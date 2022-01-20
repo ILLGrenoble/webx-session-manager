@@ -1,23 +1,22 @@
-extern crate serde;
+extern crate dotenv;
 extern crate log;
 extern crate pam_client;
-extern crate dotenv;
-
+extern crate serde;
 
 
 use env_logger::Env;
 use nix::unistd::Uid;
 use structopt::StructOpt;
-use webx_session_manager::{common::{ApplicationError, Settings}, services::Server};
 use dotenv::dotenv;
 
+use webx_session_manager::{common::{ApplicationError, Settings}, fs, services::Server};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "webx-session-manager")]
 struct Opt {
     /// Config path
     #[structopt(short, long, default_value = "")]
-    config: String
+    config: String,
 }
 
 pub fn main() -> Result<(), ApplicationError> {
@@ -26,9 +25,8 @@ pub fn main() -> Result<(), ApplicationError> {
     if !Uid::effective().is_root() {
         eprintln!("You must run this executable with root permissions");
         std::process::exit(1);
-
     }
-    
+
     if let Err(error) = run() {
         eprintln!("There was an error launching webx session manger: {}", error);
     }
@@ -44,10 +42,18 @@ pub fn run() -> Result<(), ApplicationError> {
         let env = Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, settings.logging().level());
         env_logger::init_from_env(env);
 
+        bootstrap(&settings)?;
+
         let context = zmq::Context::new();
         let mut server = Server::new(settings, context);
         server.run()?;
     }
+    Ok(())
+}
+
+pub fn bootstrap(settings: &Settings) -> Result<(), ApplicationError> {
+    fs::mkdir(settings.logging().path())?;
+    fs::mkdir(settings.xorg().log_path())?;
     Ok(())
 }
 

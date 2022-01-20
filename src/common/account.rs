@@ -1,5 +1,7 @@
-use nix::unistd::User;
 use std::fmt;
+
+use nix::unistd::User;
+
 pub struct Account {
     username: String,
     home: String,

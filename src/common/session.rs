@@ -1,51 +1,68 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Serialize, Deserialize, Clone)]
+use uuid::Uuid;
+
+use crate::common::ProcessHandle;
+
+#[derive(Clone)]
 pub struct Session {
+    id: Uuid,
     username: String,
     uid: u32,
     display_id: String,
-    process_id: i32,
     xauthority_file_path: String,
+    xorg: ProcessHandle,
+    window_manager: ProcessHandle
 }
 
 #[allow(dead_code)]
 impl Session {
     pub fn new(
+        id: Uuid,
         username: String,
         uid: u32,
         display_id: String,
-        process_id: i32,
         xauthority_file_path: String,
+        xorg: ProcessHandle,
+        window_manager: ProcessHandle
     ) -> Self {
         Self {
+            id,
             username,
             uid,
             display_id,
-            process_id,
             xauthority_file_path,
+            xorg,
+            window_manager,
         }
+    }
+
+    pub fn id(&self) -> &Uuid {
+        &self.id
     }
 
     pub fn username(&self) -> &str {
         &self.username
     }
-    
+
     pub fn uid(&self) -> u32 {
         self.uid
     }
-    
+
     pub fn display_id(&self) -> &str {
         &self.display_id
-    }
-    
-    pub fn process_id(&self) -> i32 {
-        self.process_id
     }
 
     pub fn xauthority_file_path(&self) -> &str {
         &self.xauthority_file_path
+    }
+
+    pub fn xorg(&self) -> &ProcessHandle {
+        &self.xorg
+    }
+
+    pub fn window_manager(&self) -> &ProcessHandle {
+        &self.xorg
     }
 }
 
@@ -55,7 +72,6 @@ impl fmt::Display for Session {
             .field("username", &self.username)
             .field("uid", &self.uid)
             .field("display_id", &self.display_id)
-            .field("process_id", &self.process_id)
             .field("xauthority_file_path", &self.xauthority_file_path)
             .finish()
     }

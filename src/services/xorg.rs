@@ -1,26 +1,26 @@
-use std::fs::{self};
+use std::fs::{self, File};
 use std::os::unix::prelude::CommandExt;
-use std::process::{Command, Stdio};
+use std::process::{Command};
+use std::sync::Mutex;
 
 use pam_client::env_list::EnvList;
 use rand::Rng;
 use regex::Regex;
-use sysinfo::{System, SystemExt};
+use uuid::Uuid;
 use walkdir::WalkDir;
 
-use crate::common::{Account, ApplicationError, Session, Xlock, XorgSettings};
+use crate::common::{Account, ApplicationError, ProcessHandle, Session, Xlock, XorgSettings};
 use crate::fs::{chmod, chown, mkdir, touch};
-use nix::unistd::{User, Uid};
 
 pub struct XorgService {
-    settings: XorgSettings
+    settings: XorgSettings,
+    sessions: Mutex<Vec<Session>>,
 }
 
 impl XorgService {
     pub fn new(settings: XorgSettings) -> Self {
-        Self {
-            settings
-        }
+        let sessions = Mutex::new(Vec::new());
+        Self { settings, sessions }
     }
 
     // Generate an xauth cookie
@@ -38,7 +38,11 @@ impl XorgService {
     }
 
     fn create_token(&self, display: u32, account: &Account) -> Result<(), ApplicationError> {
-        debug!("Creating xauth token for display {} and user {}", display, account.username());
+        debug!(
+            "Creating xauth token for display {} and user {}",
+            display,
+            account.username()
+        );
         let cookie = self.create_cookie();
         let file_path = format!(
             "{}/{}/webx-session-manager/Xauthority",
@@ -59,12 +63,12 @@ impl XorgService {
         Ok(())
     }
 
-    fn create_x_server(
+    fn spawn_x_server(
         &self,
         display: u32,
         environment: &EnvList,
         account: &Account,
-    ) -> Result<u32, ApplicationError> {
+    ) -> Result<ProcessHandle, ApplicationError> {
         debug!("launching x server on display :{}", display);
         let authority_file_path = format!(
             "{}/{}/webx-session-manager/Xauthority",
@@ -73,66 +77,88 @@ impl XorgService {
         );
         let display = format!(":{}", display);
         let config = self.settings.config_path();
+        let stdout_file = File::create(&format!(
+            "{}/{}.xorg.out.log",
+            self.settings.log_path(),
+            account.uid()
+        ))?;
+        let stderr_file = File::create(&format!(
+            "{}/{}.xorg.err.log",
+            self.settings.log_path(),
+            account.uid()
+        ))?;
+
         let mut command = Command::new("Xorg");
-        command.args([
-            display.as_str(),
-            "-auth",
-            authority_file_path.as_str(),
-            "-config",
-            config,
-            "-verbose"
-        ])
-        .envs(environment.iter_tuples())
-        .env("DISPLAY", display)
-        .env("XAUTHORITY", authority_file_path)
-        .env("HOME", account.home())
-        .env("XORG_RUN_AS_USER_OK", "1")
-        .current_dir(account.home())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .uid(account.uid())
-        .gid(account.gid());
+        command
+            .args([
+                display.as_str(),
+                "-auth",
+                authority_file_path.as_str(),
+                "-config",
+                config,
+                "-verbose",
+            ])
+            .envs(environment.iter_tuples())
+            .env("DISPLAY", display)
+            .env("XAUTHORITY", authority_file_path)
+            .env("HOME", account.home())
+            .env("XORG_RUN_AS_USER_OK", "1")
+            .env("XDG_RUNTIME_DIR", "/run/user/1001")
+            .current_dir(account.home())
+            .stdout(std::process::Stdio::from(stdout_file))
+            .stderr(std::process::Stdio::from(stderr_file))
+            .uid(account.uid())
+            .gid(account.gid());
 
-        debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
-
-        match command.spawn() {
-            Ok(child) => Ok(child.id()),
-            Err(error) => {
-                return Err(ApplicationError::session(format!("Could not start x server :{}", error)));
-            }
-        }
+        debug!(
+            "Spawning command: {}",
+            format!("{:?}", command).replace("\"", "")
+        );
+        ProcessHandle::new(&mut command)
     }
 
-    fn launch_window_manager(
+    fn spawn_window_manager(
         &self,
         display: u32,
-        account: &Account
-    ) -> Result<u32, ApplicationError> {
+        account: &Account,
+    ) -> Result<ProcessHandle, ApplicationError> {
         let authority_file_path = format!(
             "{}/{}/webx-session-manager/Xauthority",
             self.settings.authority_path(),
             account.uid()
         );
         let display = format!(":{}", display);
+
+        let stdout_file = File::create(&format!(
+            "{}/{}.wm.out.log",
+            self.settings.log_path(),
+            account.uid()
+        ))?;
+        let stderr_file = File::create(&format!(
+            "{}/{}.wm.err.log",
+            self.settings.log_path(),
+            account.uid()
+        ))?;
+        let xdg_run_time_dir = format!("{}/{}", self.settings.authority_path(), account.uid());
+
         let mut command = Command::new(self.settings.window_manager());
+
         command
-        .env("DISPLAY", display)
-        .env("XAUTHORITY", authority_file_path)
-        .env("HOME", account.home())
-        .current_dir(account.home())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .uid(account.uid())
-        .gid(account.gid());
+            .env("DISPLAY", display)
+            .env("XAUTHORITY", authority_file_path)
+            .env("HOME", account.home())
+            .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
+            .current_dir(account.home())
+            .stdout(std::process::Stdio::from(stdout_file))
+            .stderr(std::process::Stdio::from(stderr_file))
+            .uid(account.uid())
+            .gid(account.gid());
 
-        debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
-
-        match command.spawn() {
-            Ok(child) => Ok(child.id()),
-            Err(error) => {
-                return Err(ApplicationError::session(format!("Could not start the window manager: {}", error)));
-            }
-        }
+        debug!(
+            "Spawning command: {}",
+            format!("{:?}", command).replace("\"", "")
+        );
+        ProcessHandle::new(&mut command)
     }
 
     fn create_directory<S>(
@@ -151,12 +177,7 @@ impl XorgService {
         Ok(())
     }
 
-    fn create_file<S>(
-        &self,
-        path: S,
-        mode: u32,
-        account: &Account,
-    ) -> Result<(), ApplicationError>
+    fn create_file<S>(&self, path: S, mode: u32, account: &Account) -> Result<(), ApplicationError>
     where
         S: AsRef<str>,
     {
@@ -207,18 +228,41 @@ impl XorgService {
         environment: &EnvList,
         account: &Account,
     ) -> Result<Session, ApplicationError> {
-        let display_id = self.get_next_diplay()?;
+        let display_id = self.get_next_display()?;
         self.create_token(display_id, account)?;
-        let process_id = self.create_x_server(display_id, environment, account)?;
+        let xorg = self.spawn_x_server(display_id, environment, account)?;
+        let window_manager = self.spawn_window_manager(display_id, account)?;
 
-        // let's launch te window manager...
-        let window_manager_process_id = self.launch_window_manager(display_id, account)?;
-        info!("Running display {} on process id {} with window manager process id {}", display_id, process_id, window_manager_process_id);
-        if let Some(session) = self.get_session_by_process_and_display_id(display_id, process_id as i32) {
+        info!(
+            "Running display {} on process id {} with window manager process id {}",
+            display_id,
+            xorg.pid(),
+            window_manager.pid()
+        );
+
+        let authority_file_path = format!(
+            "{}/{}/webx-session-manager/Xauthority",
+            self.settings.authority_path(),
+            account.uid()
+        );
+
+        let session = Session::new(
+            Uuid::new_v4(),
+            account.username().into(),
+            account.uid(),
+            format!(":{}", display_id),
+            authority_file_path,
+            xorg,
+            window_manager
+        );
+        if let Ok(mut sessions) = self.sessions.lock() {
+            sessions.push(session.clone());
             return Ok(session);
         }
-        // improve the error handling
-        return Err(ApplicationError::session(format!("Could not start session for user: {}", account)));
+        return Err(ApplicationError::session(format!(
+            "Could not start session for user: {}",
+            account
+        )));
     }
 
     pub fn get_next_available_display(&self, id: u32) -> Result<u32, ApplicationError> {
@@ -231,9 +275,13 @@ impl XorgService {
         }
     }
 
-    pub fn get_next_diplay(&self) -> Result<u32, ApplicationError> {
-      let display_offset = self.settings.display_offset();
-      self.get_next_available_display(display_offset)
+    pub fn create_session_id() -> Uuid {
+        Uuid::new_v4()
+    }
+
+    pub fn get_next_display(&self) -> Result<u32, ApplicationError> {
+        let display_offset = self.settings.display_offset();
+        self.get_next_available_display(display_offset)
     }
 
     pub fn get_all_xlock_files(&self) -> Vec<Xlock> {
@@ -242,7 +290,7 @@ impl XorgService {
         WalkDir::new(self.settings.lock_path())
             .into_iter()
             .filter_map(|lock_file| lock_file.ok())
-            .filter_map(|lock_file | -> Option<Xlock> {
+            .filter_map(|lock_file| -> Option<Xlock> {
                 let file_name = lock_file.file_name().to_str().unwrap();
                 if let Some(captures) = pattern.captures(file_name) {
                     debug!("Found lock file: {}", file_name);
@@ -251,7 +299,7 @@ impl XorgService {
                     if let Ok(contents) = fs::read_to_string(lock_file.path()) {
                         if let Ok(process_id) = contents.trim().parse::<i32>() {
                             let path = lock_file.path().to_str().unwrap();
-                            let lock = Xlock::new(path,  display_id, process_id);
+                            let lock = Xlock::new(path, display_id, process_id);
                             return Some(lock);
                         }
                     }
@@ -259,81 +307,78 @@ impl XorgService {
                 None
             })
             .collect()
-
     }
 
-    pub fn get_all_sessions(&self) -> Vec<Session> {
-        self.get_all_xlock_files()
-        .into_iter()
-        .filter_map(|file| {
-            let display_id = file.display_id();
-            let process_id = file.process_id();
-            debug!("Looking for session with: {} {}", display_id, process_id);
-            self.get_session_by_process_and_display_id(display_id, process_id)
-        })
-        .collect()
-    }
-
-    pub fn get_session_by_process_and_display_id(
-        &self,
-        display_id: u32,
-        process_id: i32) -> Option<Session> {
-        let system = System::new_all();
-        if let Some(process) = system.process(process_id) {
-            match User::from_uid(Uid::from_raw(process.uid)) {
-                Ok(user) => {
-                    if let Some(user) = user {
-                        info!("found user for process: {}", user.name);
-                        let username = user.name.as_str();
-                        let authority_file_path = format!(
-                            "{}/{}/webx-session-manager/Xauthority",
-                            self.settings.authority_path(),
-                            process.uid
-                        );
-                        let session = Session::new(
-                            username.to_owned(),
-                            process.uid,
-                            format!(":{}", display_id),
-                            process_id,
-                            authority_file_path,
-                        );
-                        return Some(session);
-                    }
-                }
-                Err(error) => {
-                    error!("Error finding user id for user: {}", error);
-                }
-            }
+    pub fn get_all_sessions(&self) -> Option<Vec<Session>> {
+        if let Ok(sessions) = self.sessions.lock() {
+            info!("Sessions: {}", sessions.len());
+            return Some(sessions.to_vec());
         }
         None
     }
 
-   
+    // pub fn get_session_by_process_and_display_id(
+    //     &self,
+    //     display_id: u32,
+    //     process_id: i32) -> Option<Session> {
+    //     let system = System::new_all();
+    //     if let Some(process) = system.process(process_id) {
+    //         match User::from_uid(Uid::from_raw(process.uid)) {
+    //             Ok(user) => {
+    //                 if let Some(user) = user {
+    //                     info!("found user for process: {}", user.name);
+    //                     let username = user.name.as_str();
+    //                     let authority_file_path = format!(
+    //                         "{}/{}/webx-session-manager/Xauthority",
+    //                         self.settings.authority_path(),
+    //                         process.uid
+    //                     );
+    //                     let session = Session::new(
+    //                         username.to_owned(),
+    //                         process.uid,
+    //                         format!(":{}", display_id),
+    //                         process_id,
+    //                         authority_file_path,
+    //                     );
+    //                     return Some(session);
+    //                 }
+    //             }
+    //             Err(error) => {
+    //                 error!("Error finding user id for user: {}", error);
+    //             }
+    //         }
+    //     }
+    //     None
+    // }
+
     /// get the display for a given user
     pub fn get_session_for_user(&self, uid: u32) -> Option<Session> {
         debug!("Finding session for user id: {}", uid);
-        let sessions = self.get_all_sessions();   
-        sessions.into_iter().find(|session| {
-            info!("{} = {}", session.uid(), uid);
-            return session.uid() == uid;
-        })
+        if let Ok(sessions) = self.sessions.lock() {
+            return sessions
+                .iter()
+                .find(|session|  session.uid() == uid)
+                .cloned();
+        }
+        None
     }
 
     pub fn clean_up(&self) -> u32 {
         info!("Cleaning up zombie sessions");
         let mut cleaned_up_total = 0;
-        for lock_file in self.get_all_xlock_files() {
-            let display_id = lock_file.display_id();
-            let process_id = lock_file.process_id();
-            let path = lock_file.path();
-            if self.get_session_by_process_and_display_id(display_id, process_id).is_none() {
-                 if fs::remove_file(path).is_err() {
-                    error!("Could not remove zombie display session {}", &lock_file);
+        if let Ok(mut sessions) = self.sessions.lock() {
+            sessions.retain(|session| {
+                if session.xorg().is_running().is_err() {
+                    true
                 } else {
-                    debug!("Cleaned up zombie display session {}", &lock_file);
+                    info!(
+                        "removing session {} as the xorg server is no longer running",
+                        session
+                    );
                     cleaned_up_total += 1;
+                    false
                 }
-            }
+            });
         }
         cleaned_up_total
     }

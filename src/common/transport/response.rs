@@ -1,14 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::common::Session;
-
+use crate::dto::SessionDto;
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "response", content = "content")]
 pub enum Response {
     #[serde(rename = "login")]
-    Login(Session),
+    Login(SessionDto),
     #[serde(rename = "who")]
-    Who(Vec<Session>),
+    Who(Vec<SessionDto>),
     #[serde(rename = "error")]
     Error { message: String },
     #[serde(rename = "logout")]

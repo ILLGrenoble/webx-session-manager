@@ -1,15 +1,15 @@
 use std::{path::Path};
+
 use serde::Deserialize;
 
 use super::ApplicationError;
-
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     logging: LoggingSettings,
     authentication: AuthenticationSettings,
     transport: TransportSettings,
-    xorg: XorgSettings
+    xorg: XorgSettings,
 }
 
 
@@ -20,22 +20,23 @@ pub struct TransportSettings {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct XorgSettings {
+    log_path: String,
     lock_path: String,
     authority_path: String,
     config_path: String,
     display_offset: u32,
-    window_manager: String
+    window_manager: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct LoggingSettings {
     level: String,
-    path: String
+    path: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AuthenticationSettings {
-    service: String
+    service: String,
 }
 
 impl AuthenticationSettings {
@@ -45,7 +46,6 @@ impl AuthenticationSettings {
 }
 
 impl LoggingSettings {
-
     pub fn level(&self) -> &str {
         &self.level
     }
@@ -53,11 +53,9 @@ impl LoggingSettings {
     pub fn path(&self) -> &str {
         &self.path
     }
-
 }
 
 impl XorgSettings {
-
     pub fn lock_path(&self) -> &str {
         &self.lock_path
     }
@@ -78,6 +76,9 @@ impl XorgSettings {
         &self.config_path
     }
 
+    pub fn log_path(&self) -> &str {
+        &self.log_path
+    }
 }
 
 impl TransportSettings {
@@ -89,10 +90,8 @@ impl TransportSettings {
 static DEFAULT_CONFIG_PATHS: [&str; 2] = ["/etc/webx/webx-session-manager-config.yml", "./config.yml"];
 
 
-
 impl Settings {
     pub fn new(config_path: &str) -> Result<Self, ApplicationError> {
-
         let config_path = Settings::get_config_path(config_path);
 
         let mut settings_raw = config::Config::default();
@@ -146,14 +145,14 @@ impl Settings {
 
         if self.authentication.service.is_empty() {
             eprintln!("Please specify a PAM service to use (i.e. login)");
-            return false
+            return false;
         }
 
         if self.transport.ipc.is_empty() {
             eprintln!("Please specify a path to the ipc socket (i.e. /tmp/webx-session-manager.ipc)");
             return false;
         }
-        
+
 
         if self.xorg.authority_path.is_empty() {
             eprintln!("Please specify a path for where to store the xauthority files (i.e. /run/user");
@@ -170,10 +169,13 @@ impl Settings {
             return false;
         }
 
-    
+        if self.xorg.log_path.is_empty() {
+            eprintln!("Please specify a path to store the session logs i.e. /var/log/webx/webx-session-manager/sessions");
+            return false;
+        }
+
+
         true
     }
-
-    
 }
 

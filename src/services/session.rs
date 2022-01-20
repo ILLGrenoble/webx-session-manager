@@ -22,11 +22,11 @@ impl SessionService {
 
     /// create a new session for the user
     pub fn create_session(&self, credentials: &Credentials) -> Result<Session, ApplicationError> {
-        match self.authenticator.authenticate(credentials) {
+        return match self.authenticator.authenticate(credentials) {
             Ok(environment) => {
                 if let Some(user) = User::from_name(credentials.username()).unwrap() {
                     if let Some(account) = Account::from_user(user) {
-                        
+
                         // if the user already has a x session running then exit early...
                         if let Some(session) = self.xorg_service.get_session_for_user(account.uid()) {
                             return Ok(session);
@@ -42,19 +42,22 @@ impl SessionService {
                     }
                     return Err(ApplicationError::session(format!("User {} is invalid. Check they have a home directory?", credentials.username())));
                 }
-                return Err(ApplicationError::session(format!("Could not find user {}", credentials.username())));
+                Err(ApplicationError::session(format!("Could not find user {}", credentials.username())))
             }
             Err(error) => {
-                return Err(ApplicationError::session(format!("Error authenticating user {}",error)));
+                Err(ApplicationError::session(format!("Error authenticating user {}", error)))
             }
         }
     }
 
     /// get all sessions
-    pub fn get_all(&self) -> Vec<Session> {
-        let sessions =self.xorg_service.get_all_sessions();
-        info!("Found sessions: {:?}", sessions.len());
-        sessions
+    pub fn get_all(&self) -> Option<Vec<Session>> {
+        if let Some(sessions) = self.xorg_service.get_all_sessions() {
+            info!("Found sessions: {:?}", sessions.len());
+            return Some(sessions);
+        }
+
+        None
     }
 
     // clean up zombie session

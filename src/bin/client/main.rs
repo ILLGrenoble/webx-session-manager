@@ -1,7 +1,6 @@
-
-
 use structopt::StructOpt;
-use webx_session_manager::{common::{ApplicationError}, services::{Client}, authentication::Credentials};
+
+use webx_session_manager::{authentication::Credentials, common::ApplicationError, services::Client};
 
 #[derive(StructOpt)]
 #[structopt(about = "WebX Session Manager Client")]

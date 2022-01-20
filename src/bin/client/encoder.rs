@@ -1,6 +1,5 @@
 use webx_session_manager::common::{Request, Response};
 
-
 #[derive(Default)]
 pub struct Encoder;
 
@@ -18,7 +17,7 @@ impl Encoder {
 
     pub fn decode(&self, json: &str) -> Option<Response> {
         match serde_json::from_str::<Response>(json) {
-            Ok(response)=> Some(response),
+            Ok(response) => Some(response),
             Err(_) => None,
         }
     }

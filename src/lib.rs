@@ -6,3 +6,4 @@ pub mod authentication;
 pub mod common;
 pub mod fs;
 pub mod services;
+pub mod dto;

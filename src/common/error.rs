@@ -2,7 +2,6 @@ use std::{fmt, io};
 
 use config::ConfigError;
 
-
 #[derive(Clone, Debug)]
 pub struct ApplicationError {
     message: String,
@@ -37,28 +36,28 @@ impl ApplicationError {
     pub fn environment(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
-            ApplicationErrorKind::Environment
+            ApplicationErrorKind::Environment,
         )
     }
 
     pub fn session(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
-            ApplicationErrorKind::Session
+            ApplicationErrorKind::Session,
         )
     }
 
     pub fn transport(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
-            ApplicationErrorKind::Transport
+            ApplicationErrorKind::Transport,
         )
     }
 
     pub fn configuration(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
-            ApplicationErrorKind::Configuration
+            ApplicationErrorKind::Configuration,
         )
     }
 
@@ -114,5 +113,5 @@ impl From<ConfigError> for ApplicationError {
     fn from(error: ConfigError) -> Self {
         let message = format!("{}", error);
         ApplicationError::configuration(message)
-    } 
+    }
 }

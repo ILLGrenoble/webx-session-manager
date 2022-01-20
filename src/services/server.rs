@@ -1,16 +1,17 @@
 use crate::{
     authentication::{Authenticator, Credentials},
-    common::{ApplicationError, Settings, Encoder, Request, Response},
+    common::{ApplicationError, Encoder, Request, Response, Settings},
 };
 
 use super::{SessionService, XorgService};
+use crate::dto::SessionDto;
 
 pub struct Server {
     context: zmq::Context,
     is_running: bool,
     session_service: SessionService,
     encoder: Encoder,
-    address: String
+    address: String,
 }
 
 impl Server {
@@ -25,7 +26,7 @@ impl Server {
             is_running: false,
             session_service,
             encoder,
-            address
+            address,
         }
     }
 
@@ -40,15 +41,14 @@ impl Server {
         while self.is_running {
             // Poll both sockets
             if zmq::poll(&mut items, 5000).is_ok() {
-                
+
                 // clean up zombie x session
-                // self.session_service.clean_up();
+                self.session_service.clean_up();
 
                 // Check for REQ-REP message (if running)
                 if items[0].is_readable() && self.is_running {
                     self.handle_request(&rep_socket);
                 }
-
             }
         }
 
@@ -101,22 +101,24 @@ impl Server {
     fn handle_login_request(&self, rep_socket: &zmq::Socket, credentials: Credentials) {
         debug!("Creating session for user: {}", credentials.username());
         let response = match self.session_service.create_session(&credentials) {
-            Ok(session) => Response::Login(session),
+            Ok(session) => Response::Login(SessionDto::from(&session)),
             Err(error) => {
-                Response::Error{ message: format!("Error creating session: {}", error.to_string()) }
+                error!("{}", error);
+                Response::Error { message: format!("Error creating session: {}", error.to_string()) }
             }
         };
-        let json  = self.encoder.encode(response).unwrap_or("".into());
+        let json = self.encoder.encode(response).unwrap_or_else(|| "".into());
         if let Err(error) = rep_socket.send(&json[..], 0) {
             error!("Failed to send response message: {}", error);
         }
-}
+    }
 
     fn handle_who_request(&self, rep_socket: &zmq::Socket) {
         debug!("Listing sessions");
-        let sessions = self.session_service.get_all();
-        let response = Response::Who(sessions);
-        let json  = self.encoder.encode(response).unwrap_or("".into());
+        let sessions =self.session_service.get_all().unwrap_or_default();
+        let dtos = sessions.iter().map(|session|  session.into()).collect();
+        let response = Response::Who(dtos);
+        let json = self.encoder.encode(response).unwrap_or_else(|| "".into());
         if let Err(error) = rep_socket.send(&json[..], 0) {
             error!("Failed to send response message: {}", error);
         }

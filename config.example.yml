@@ -2,7 +2,7 @@ logging:
   # trace, debug, info or error
   level: debug
   # path to store the sesion manager log file
-  path: /var/log/webx
+  path: /var/log/webx/session-manager
 
 transport:
   # path to the zmq ipc socket file. 
@@ -24,4 +24,5 @@ xorg:
   display_offset: 60
   # script to launch the window manager of your choice
   window_manager: /etc/webx/webx-session-manager/startwm.sh
+  log_path: /var/log/webx/session-manager/sessions
   

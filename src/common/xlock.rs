@@ -3,16 +3,16 @@ use std::fmt;
 pub struct Xlock {
     path: String,
     display_id: u32,
-    process_id: i32
+    process_id: i32,
 }
 
 
 impl Xlock {
-    pub fn new(path: &str, display_id: u32, process_id: i32) -> Self{
+    pub fn new(path: &str, display_id: u32, process_id: i32) -> Self {
         Self {
             path: path.into(),
             display_id,
-            process_id
+            process_id,
         }
     }
 
@@ -23,13 +23,11 @@ impl Xlock {
     pub fn display_id(&self) -> u32 {
         self.display_id
     }
-    
+
     pub fn process_id(&self) -> i32 {
         self.process_id
     }
-
 }
-
 
 
 impl fmt::Display for Xlock {

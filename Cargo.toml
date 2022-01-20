@@ -1,5 +1,6 @@
 [package]
 name = "webx-session-manager"
+description = "The WebX Session Manager listens for session requests, authenticates a user's credentials and creates sessions by launching Xorg and window manager processes."
 version = "0.1.0"
 edition = "2018"
 
@@ -36,3 +37,18 @@ path = "src/bin/server/main.rs"
 [[bin]]
 name = "client"
 path = "src/bin/client/main.rs"
+
+[package.metadata.deb]
+maintainer = "Jamie Hall <hall@ill.fr>"
+copyright = "2022, Institut Laue Langevin"
+license-file = ["LICENSE", "0"]
+extended-description = ""
+depends = "$auto"
+section = "net"
+priority = "optional"
+assets = [
+    ["target/release/server", "usr/bin/webx-session-manager", "755"],
+    ["config.example.yml", "/etc/webx/webx-session-manager-config.yml", "644"],
+    ["bin/xorg.conf", "/etc/webx/webx-session-manager/xorg.conf", "644"],
+    ["bin/startwm.sh", "/etc/webx/webx-session-manager/startwm.sh", "755"],
+]

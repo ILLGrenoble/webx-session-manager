@@ -13,6 +13,8 @@ pub struct SessionDto {
     xorg_process_id: u32,
     window_manager_process_id: u32,
     xauthority_file_path: String,
+    width: u32,
+    height: u32
 }
 
 #[allow(dead_code)]
@@ -25,6 +27,8 @@ impl SessionDto {
         xorg_process_id: u32,
         window_manager_process_id: u32,
         xauthority_file_path: String,
+        width: u32,
+        height: u32
     ) -> Self {
         Self {
             id,
@@ -34,6 +38,8 @@ impl SessionDto {
             xorg_process_id,
             window_manager_process_id,
             xauthority_file_path,
+            width,
+            height
         }
     }
 
@@ -64,6 +70,10 @@ impl SessionDto {
     pub fn xauthority_file_path(&self) -> &str {
         &self.xauthority_file_path
     }
+
+    pub fn resolution(&self) -> String {
+        format!("{}x{}", self.width, self.height)
+    }
 }
 
 impl fmt::Display for SessionDto {
@@ -76,6 +86,9 @@ impl fmt::Display for SessionDto {
             .field("xorg_process_id", &self.xorg_process_id)
             .field("window_manager_process_id", &self.window_manager_process_id)
             .field("xauthority_file_path", &self.xauthority_file_path)
+            .field("width", &self.width)
+            .field("height", &self.height)
+
             .finish()
     }
 }
@@ -88,17 +101,19 @@ impl From<&Session> for SessionDto {
         let display_id = session.display_id();
         let xorg_process_id = session.xorg().pid();
         let window_manager_process_id = session.window_manager().pid();
-
         let xauthority_file_path = session.xauthority_file_path();
-        let id  = session.id().to_string();
+        let id  = session.id().to_simple();
+        let (width, height) = session.resolution().split();
         SessionDto::new(
-            id,
+            id.to_string(),
             username.into(),
             uid,
             display_id.into(),
             xorg_process_id,
             window_manager_process_id,
             xauthority_file_path.into(),
+            width,
+            height
         )
     }
 }

@@ -5,6 +5,7 @@ pub use session::Session;
 pub use settings::{AuthenticationSettings, LoggingSettings, Settings, TransportSettings, XorgSettings};
 pub use transport::{Encoder, Request, Response};
 pub use xlock::Xlock;
+pub use resolution::ScreenResolution;
 
 mod account;
 mod settings;
@@ -13,3 +14,4 @@ mod session;
 mod transport;
 mod xlock;
 mod process;
+mod resolution;

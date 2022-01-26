@@ -2,7 +2,7 @@ use nix::unistd::User;
 
 use crate::{
     authentication::{Authenticator, Credentials},
-    common::{Account, ApplicationError, Session},
+    common::{Account, ApplicationError, Session, ScreenResolution},
 };
 
 use super::XorgService;
@@ -21,7 +21,7 @@ impl SessionService {
     }
 
     /// create a new session for the user
-    pub fn create_session(&self, credentials: &Credentials) -> Result<Session, ApplicationError> {
+    pub fn create_session(&self, credentials: &Credentials, resolution: ScreenResolution) -> Result<Session, ApplicationError> {
         return match self.authenticator.authenticate(credentials) {
             Ok(environment) => {
                 if let Some(user) = User::from_name(credentials.username()).unwrap() {
@@ -34,18 +34,18 @@ impl SessionService {
 
                         // create the necessary configuration files
                         if let Err(error) = self.xorg_service.create_user_files(&account) {
-                            return Err(ApplicationError::session(format!("Error occurred setting up the configuration for a session {}", error)));
+                            return Err(ApplicationError::session(format!("error occurred setting up the configuration for a session {}", error)));
                         }
 
                         // finally, let's launch the x server...
-                        return self.xorg_service.execute(&environment, &account);
+                        return self.xorg_service.execute(&environment, &account, resolution);
                     }
-                    return Err(ApplicationError::session(format!("User {} is invalid. Check they have a home directory?", credentials.username())));
+                    return Err(ApplicationError::session(format!("user {} is invalid. check they have a home directory?", credentials.username())));
                 }
-                Err(ApplicationError::session(format!("Could not find user {}", credentials.username())))
+                Err(ApplicationError::session(format!("could not find user {}", credentials.username())))
             }
             Err(error) => {
-                Err(ApplicationError::session(format!("Error authenticating user {}", error)))
+                Err(ApplicationError::session(format!("error authenticating user {}", error)))
             }
         }
     }
@@ -53,7 +53,7 @@ impl SessionService {
     /// get all sessions
     pub fn get_all(&self) -> Option<Vec<Session>> {
         if let Some(sessions) = self.xorg_service.get_all_sessions() {
-            info!("Found sessions: {:?}", sessions.len());
+            debug!("found sessions: {:?}", sessions.len());
             return Some(sessions);
         }
 
@@ -62,6 +62,8 @@ impl SessionService {
 
     // clean up zombie session
     pub fn clean_up(&self) {
-        info!("Cleaned up {} zombie sessions", self.xorg_service.clean_up());
+        if self.xorg_service.clean_up() > 0 {
+            info!("Cleaned up {} zombie sessions", self.xorg_service.clean_up());
+        }
     }
 }

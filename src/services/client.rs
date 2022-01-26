@@ -1,6 +1,6 @@
 use prettytable::{Cell, Row, Table};
 
-use crate::{authentication::Credentials, common::{ApplicationError, Request, Response}};
+use crate::{authentication::Credentials, common::{ApplicationError, Request, Response, ScreenResolution}};
 
 pub struct Client {
     socket: zmq::Socket,
@@ -57,12 +57,14 @@ impl Client {
     }
 
     /// login the user and return the create session
-    pub fn login(&self, credentials: Credentials) -> Result<(), ApplicationError> {
+    pub fn login(&self, credentials: Credentials, resolution: ScreenResolution) -> Result<(), ApplicationError> {
         println!("Logging in user: {}", credentials.username());
 
         let request = Request::Login {
             username: credentials.username().into(),
             password: credentials.password().into(),
+            width: resolution.width(),
+            height: resolution.height()
         };
         if let Ok(response) = self.send(request) {
             match response {

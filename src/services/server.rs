@@ -1,6 +1,6 @@
 use crate::{
     authentication::{Authenticator, Credentials},
-    common::{ApplicationError, Encoder, Request, Response, Settings},
+    common::{ApplicationError, Encoder, Request, Response, Settings, ScreenResolution},
 };
 
 use super::{SessionService, XorgService};
@@ -32,7 +32,6 @@ impl Server {
 
     /// Launch the server and start listening for requests
     pub fn run(&mut self) -> Result<(), ApplicationError> {
-        // Create REP socket
         let rep_socket = self.create_rep_socket()?;
 
         let mut items = [rep_socket.as_poll_item(zmq::POLLIN)];
@@ -78,9 +77,10 @@ impl Server {
         } else if let Some(request) = message.as_str() {
             match self.encoder.decode(request) {
                 Some(request) => match request {
-                    Request::Login { username, password } => {
+                    Request::Login { username, password, width, height } => {
                         let credentials = Credentials::new(username, password);
-                        self.handle_login_request(rep_socket, credentials)
+                        let resolution = ScreenResolution::new(width, height);
+                        self.handle_login_request(rep_socket, credentials, resolution)
                     }
                     Request::Who => self.handle_who_request(rep_socket),
                     Request::Terminate { id } => self.handle_terminate_request(rep_socket, id),
@@ -94,17 +94,21 @@ impl Server {
 
     fn handle_unknown_request(&self, rep_socket: &zmq::Socket) {
         if let Err(error) = rep_socket.send("unknown request", 0) {
-            error!("Failed to send response message: {}", error);
+            error!("failed to send response message: {}", error);
         }
     }
 
-    fn handle_login_request(&self, rep_socket: &zmq::Socket, credentials: Credentials) {
-        debug!("Creating session for user: {}", credentials.username());
-        let response = match self.session_service.create_session(&credentials) {
+    fn handle_login_request(&self, 
+        rep_socket: &zmq::Socket, 
+        credentials: Credentials, 
+        resolution: ScreenResolution
+    ) {
+        debug!("Creating session for user {} with resolution: {}", credentials.username(), resolution);
+        let response = match self.session_service.create_session(&credentials, resolution) {
             Ok(session) => Response::Login(SessionDto::from(&session)),
             Err(error) => {
                 error!("{}", error);
-                Response::Error { message: format!("Error creating session: {}", error.to_string()) }
+                Response::Error { message: format!("error creating session: {}", error.to_string()) }
             }
         };
         let json = self.encoder.encode(response).unwrap_or_else(|| "".into());

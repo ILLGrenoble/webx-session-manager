@@ -4,6 +4,8 @@ use uuid::Uuid;
 
 use crate::common::ProcessHandle;
 
+use super::ScreenResolution;
+
 #[derive(Clone)]
 pub struct Session {
     id: Uuid,
@@ -12,7 +14,8 @@ pub struct Session {
     display_id: String,
     xauthority_file_path: String,
     xorg: ProcessHandle,
-    window_manager: ProcessHandle
+    window_manager: ProcessHandle,
+    resolution: ScreenResolution
 }
 
 #[allow(dead_code)]
@@ -24,7 +27,8 @@ impl Session {
         display_id: String,
         xauthority_file_path: String,
         xorg: ProcessHandle,
-        window_manager: ProcessHandle
+        window_manager: ProcessHandle,
+        resolution: ScreenResolution
     ) -> Self {
         Self {
             id,
@@ -34,6 +38,7 @@ impl Session {
             xauthority_file_path,
             xorg,
             window_manager,
+            resolution
         }
     }
 
@@ -62,17 +67,23 @@ impl Session {
     }
 
     pub fn window_manager(&self) -> &ProcessHandle {
-        &self.xorg
+        &self.window_manager
     }
+
+    pub fn resolution(&self) -> &ScreenResolution {
+        &self.resolution
+    }
+  
 }
 
 impl fmt::Display for Session {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Session")
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.debug_struct("Session")
             .field("username", &self.username)
             .field("uid", &self.uid)
             .field("display_id", &self.display_id)
             .field("xauthority_file_path", &self.xauthority_file_path)
+            .field("resolution", &format!("{}", &self.resolution))
             .finish()
     }
 }

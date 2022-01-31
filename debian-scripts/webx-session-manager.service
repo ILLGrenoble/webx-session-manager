@@ -1,0 +1,14 @@
+[Unit]
+Description=WebX Session Manager 
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+User=root
+RemainAfterExit=yes
+ExecStart=/usr/bin/webx-session-manager
+
+[Install]
+WantedBy=multi-user.target

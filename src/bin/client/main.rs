@@ -5,7 +5,10 @@ use webx_session_manager::{authentication::Credentials, common::{ApplicationErro
 #[derive(StructOpt)]
 #[structopt(about = "WebX Session Manager Client")]
 enum Command {
-    Who,
+    Who {
+        #[structopt(long, default_value = "/tmp/webx-session-manager.ipc")]
+        ipc: String
+    },
     Login {
         #[structopt(short, long)]
         username: String,
@@ -18,24 +21,25 @@ enum Command {
 
         #[structopt(short, long)]
         height: u32,
-    },
-    Terminate {
-        #[structopt(short, long)]
-        username: String,
-    },
+
+        #[structopt(long, default_value = "/tmp/webx-session-manager.ipc")]
+        ipc: String
+    }
 }
 
 pub fn main() -> Result<(), ApplicationError> {
     let command = Command::from_args();
-    let client = Client::new("/tmp/webx-session-manager.ipc".to_string())?;
     match command {
-        Command::Who => client.who()?,
-        Command::Login { username, password, width, height } => {
+        Command::Who {ipc} => {
+            let client = Client::new(ipc)?;
+            client.who()?
+        }
+        Command::Login { ipc, username, password, width, height } => {
             let credentials = Credentials::new(username, password);
             let resolution = ScreenResolution::new(width, height);
+            let client = Client::new(ipc)?;
             client.login(credentials, resolution)?;
         }
-        Command::Terminate { username } => client.terminate(username)
     }
 
     Ok(())

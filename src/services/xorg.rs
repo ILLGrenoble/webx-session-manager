@@ -3,7 +3,6 @@ use std::os::unix::prelude::CommandExt;
 use std::process::{Command};
 use std::sync::Mutex;
 
-use pam_client::env_list::EnvList;
 use rand::Rng;
 use uuid::Uuid;
 
@@ -105,10 +104,10 @@ impl XorgService {
         &self,
         session_id: &Uuid,
         display: u32,
-        environment: &EnvList,
+        resolution: &ScreenResolution,
         account: &Account,
     ) -> Result<ProcessHandle, ApplicationError> {
-        debug!("launching x server on display :{}", display);
+        debug!("Launching x server on display :{}", display);
         let authority_file_path = format!(
             "{}/{}/webx-session-manager/Xauthority",
             self.settings.authority_path(),
@@ -127,6 +126,8 @@ impl XorgService {
             session_id.to_simple()
         ))?;
 
+        let xdg_run_time_dir = format!("{}/{}", self.settings.authority_path(), account.uid());
+        let (screen_width, screen_height) = resolution.split();
         let mut command = Command::new("Xorg");
         command
             .args([
@@ -137,22 +138,20 @@ impl XorgService {
                 config,
                 "-verbose",
             ])
-            .envs(environment.iter_tuples())
             .env("DISPLAY", display)
             .env("XAUTHORITY", authority_file_path)
             .env("HOME", account.home())
             .env("XORG_RUN_AS_USER_OK", "1")
-            .env("XDG_RUNTIME_DIR", "/run/user/1001")
+            .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
+            .env("XRDP_START_WIDTH", screen_width.to_string())
+            .env("XRDP_START_HEIGHT", screen_height.to_string())
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
             .uid(account.uid())
             .gid(account.gid());
 
-        debug!(
-            "Spawning command: {}",
-            format!("{:?}", command).replace("\"", "")
-        );
+        debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
         ProcessHandle::new(&mut command)
     }
 
@@ -179,6 +178,7 @@ impl XorgService {
             self.settings.log_path(),
             session_id.to_simple()
         ))?;
+        
         let xdg_run_time_dir = format!("{}/{}", self.settings.authority_path(), account.uid());
 
         let mut command = Command::new(self.settings.window_manager());
@@ -199,51 +199,6 @@ impl XorgService {
             format!("{:?}", command).replace("\"", "")
         );
         ProcessHandle::new(&mut command)
-    }
-
-
-    fn modify_resolution(
-        &self,
-        display: u32,
-        account: &Account,
-        resolution: &ScreenResolution
-    ) -> Result<(), ApplicationError> {
-        let authority_file_path = format!(
-            "{}/{}/webx-session-manager/Xauthority",
-            self.settings.authority_path(),
-            account.uid()
-        );
-        let display = format!(":{}", display);
-        let mut command = Command::new("xrandr");
-        let (width, height) = resolution.split();
-        command
-            .args([
-                "-s",
-                &format!("{}x{}", width, height),
-                "-d",
-                &display
-            ])
-            .env("DISPLAY", display)
-            .env("XAUTHORITY", authority_file_path)
-            .env("HOME", account.home())
-            .current_dir(account.home())
-            .uid(account.uid())
-            .gid(account.gid());
-
-        debug!(
-            "Executing command: {}",
-            format!("{:?}", command).replace("\"", "")
-        );
-
-        match command.output() {
-            Ok(output) => {
-                error!("Got output: {:?}", output);
-                return Ok(());
-            }
-            Err(_) => {
-                return Err(ApplicationError::session(format!("Unable to modify resolution: {}", resolution)));
-            }
-        }      
     }
 
     fn create_directory<S>(
@@ -310,7 +265,6 @@ impl XorgService {
     // create the xauth token and launch x11 server
     pub fn execute(
         &self,
-        environment: &EnvList,
         account: &Account,
         resolution: ScreenResolution
     ) -> Result<Session, ApplicationError> {
@@ -320,14 +274,8 @@ impl XorgService {
         let session_id = Uuid::new_v4();
 
         // spawn the x server and the window manager
-        let xorg = self.spawn_x_server(&session_id, display_id, environment, account)?;
-        std::thread::sleep(std::time::Duration::from_secs(5));
-       
-        // modify the screen resolution
-        self.modify_resolution(display_id, account, &resolution)?;
-
+        let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account)?;       
         let window_manager = self.spawn_window_manager(&session_id, display_id, account)?;
- 
 
         info!(
             "Running display {} on process id {} with window manager process id {}",
@@ -368,7 +316,7 @@ impl XorgService {
         if fs::metadata(path).is_ok() {
             self.get_next_available_display(id + 1)
         } else {
-            return Ok(id);
+            Ok(id)
         }
     }
 

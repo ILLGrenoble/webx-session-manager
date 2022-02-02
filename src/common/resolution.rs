@@ -15,7 +15,6 @@ impl ScreenResolution {
         }
     }
 
-
     pub fn width(&self) -> u32 {
         self.width
     }

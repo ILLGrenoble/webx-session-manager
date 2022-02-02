@@ -1,13 +1,14 @@
-use shared_child::SharedChild;
-use std::sync::Arc;
 use std::process::Command;
+use std::sync::Arc;
+
+use shared_child::SharedChild;
+
 use crate::common::ApplicationError;
 
 #[derive(Clone)]
 pub struct ProcessHandle {
     process: Arc<SharedChild>,
 }
-
 
 impl ProcessHandle {
     pub fn new(mut command: &mut Command) -> Result<ProcessHandle, ApplicationError> {
@@ -23,7 +24,6 @@ impl ProcessHandle {
     pub fn pid(&self) -> u32 {
         self.process.id()
     }
-
 
     pub fn is_running(&self) -> Result<(), ApplicationError> {
         let terminate_result = self.process.try_wait();
@@ -43,5 +43,4 @@ impl ProcessHandle {
             )))
         }
     }
-
 }

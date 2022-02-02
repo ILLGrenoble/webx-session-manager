@@ -4,10 +4,16 @@ extern crate pam_client;
 extern crate serde;
 
 
-use env_logger::Env;
-use nix::unistd::Uid;
-use structopt::StructOpt;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
+
 use dotenv::dotenv;
+use env_logger::Env;
+use libc::{SIGINT, SIGQUIT, SIGTERM};
+use log::info;
+use nix::unistd::Uid;
+use signal_hook::iterator::Signals;
+use structopt::StructOpt;
 
 use webx_session_manager::{common::{ApplicationError, Settings}, fs, services::Server};
 
@@ -19,7 +25,8 @@ struct Opt {
     config: String,
 }
 
-pub fn main() -> Result<(), ApplicationError> {
+#[tokio::main]
+pub async fn main() -> Result<(), ApplicationError> {
     dotenv().ok();
 
     if !Uid::effective().is_root() {
@@ -27,13 +34,13 @@ pub fn main() -> Result<(), ApplicationError> {
         std::process::exit(1);
     }
 
-    if let Err(error) = run() {
+    if let Err(error) = run().await {
         eprintln!("There was an error launching webx session manger: {}", error);
     }
     Ok(())
 }
 
-pub fn run() -> Result<(), ApplicationError> {
+pub async fn run() -> Result<(), ApplicationError> {
     let opt = Opt::from_args();
 
     let settings = Settings::new(&opt.config)?;
@@ -44,9 +51,35 @@ pub fn run() -> Result<(), ApplicationError> {
 
         bootstrap(&settings)?;
 
+        let stop_signal = Arc::new(AtomicBool::new(false));
+
+        signal_hook::flag::register(SIGTERM, Arc::clone(&stop_signal))?;
+        signal_hook::flag::register(SIGINT, Arc::clone(&stop_signal))?;
+        signal_hook::flag::register(SIGQUIT, Arc::clone(&stop_signal))?;
+
+
         let context = zmq::Context::new();
         let mut server = Server::new(settings, context);
-        server.run()?;
+
+
+        let mut signals = Signals::new(&[
+            SIGTERM,
+            SIGINT,
+            SIGQUIT,
+        ])
+            .expect("Signals::new() failed");
+        let handle = tokio::spawn(async move {
+            server.run(stop_signal).unwrap();
+        });
+
+        signals.forever();
+
+        info!("Termination signal received. Shutting down session manager...");
+
+        if handle.await.is_err() {
+            eprintln!("Error joining server handle");
+        }
+
     }
     Ok(())
 }
@@ -56,4 +89,8 @@ pub fn bootstrap(settings: &Settings) -> Result<(), ApplicationError> {
     fs::mkdir(settings.xorg().log_path())?;
     Ok(())
 }
+
+
+
+
 

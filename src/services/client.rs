@@ -22,6 +22,8 @@ impl Client {
 
     /// get a list of active sessions
     pub fn who(&self) -> Result<(), ApplicationError> {
+        println!("Fetching a list of sessions");
+
         if let Ok(response) = self.send(Request::Who) {
             match response {
                 Response::Who(sessions) => {
@@ -69,7 +71,7 @@ impl Client {
         if let Ok(response) = self.send(request) {
             match response {
                 Response::Login(session) => {
-                    println!("Session launched:{}", session);
+                    println!("Session launched: {}", session);
                 }
                 Response::Error { message } => println!("Got an error response: {}", message),
                 _ => println!("Received an unknown response")
@@ -77,10 +79,6 @@ impl Client {
         }
 
         Ok(())
-    }
-
-    pub fn terminate(&self, _: String) {
-        eprintln!("Not implemented for the moment");
     }
 
     fn send(&self, request: Request) -> Result<Response, ApplicationError> {

@@ -15,11 +15,12 @@ pub struct Session {
     xauthority_file_path: String,
     xorg: ProcessHandle,
     window_manager: ProcessHandle,
-    resolution: ScreenResolution
+    resolution: ScreenResolution,
 }
 
 #[allow(dead_code)]
 impl Session {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: Uuid,
         username: String,
@@ -28,7 +29,7 @@ impl Session {
         xauthority_file_path: String,
         xorg: ProcessHandle,
         window_manager: ProcessHandle,
-        resolution: ScreenResolution
+        resolution: ScreenResolution,
     ) -> Self {
         Self {
             id,
@@ -38,7 +39,7 @@ impl Session {
             xauthority_file_path,
             xorg,
             window_manager,
-            resolution
+            resolution,
         }
     }
 
@@ -73,7 +74,6 @@ impl Session {
     pub fn resolution(&self) -> &ScreenResolution {
         &self.resolution
     }
-  
 }
 
 impl fmt::Display for Session {
@@ -84,6 +84,8 @@ impl fmt::Display for Session {
             .field("display_id", &self.display_id)
             .field("xauthority_file_path", &self.xauthority_file_path)
             .field("resolution", &format!("{}", &self.resolution))
+            .field("xorg pid", &self.xorg.pid())
+            .field("window_manager pid", &self.window_manager.pid())
             .finish()
     }
 }

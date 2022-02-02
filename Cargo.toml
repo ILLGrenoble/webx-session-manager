@@ -43,6 +43,9 @@ extended-description = ""
 depends = "$auto"
 section = "net"
 priority = "optional"
+maintainer-scripts = "debian-scripts"
+systemd-units = {}
+conf-files = ["/etc/webx/webx-session-manager-config.yml", "/etc/webx/webx-session-manager/xorg.conf", "/etc/webx/webx-session-manager/startwm.sh"]
 assets = [
     ["target/release/server", "usr/bin/webx-session-manager", "755"],
     ["config.example.yml", "/etc/webx/webx-session-manager-config.yml", "644"],

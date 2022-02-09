@@ -23,6 +23,7 @@ impl Authenticator {
         let mut context = Context::new(service, None, conversation)?;
 
         context.authenticate(Flag::NONE)?;
+        let _ = context.open_session(Flag::NONE)?;
         Ok(())
 
     }

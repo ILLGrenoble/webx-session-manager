@@ -23,7 +23,7 @@ impl SessionService {
     /// create a new session for the user
     pub fn create_session(&self, credentials: &Credentials, resolution: ScreenResolution) -> Result<Session, ApplicationError> {
         return match self.authenticator.authenticate(credentials) {
-            Ok(_) => {
+            Ok(environment) => {
                 debug!("Successfully authenticated user: {}", &credentials.username());
                 if let Ok(Some(user)) = User::from_name(credentials.username()) {
                     debug!("Found user: {}", &credentials.username());
@@ -41,7 +41,7 @@ impl SessionService {
                         }
 
                         // finally, let's launch the x server...
-                        return self.xorg_service.execute(&account, resolution);
+                        return self.xorg_service.execute(&account, resolution, environment);
                     }
                     return Err(ApplicationError::session(format!("User {} is invalid. check they have a home directory?", credentials.username())));
                 }

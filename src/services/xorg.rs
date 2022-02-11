@@ -3,6 +3,7 @@ use std::os::unix::prelude::CommandExt;
 use std::process::{Command};
 use std::sync::Mutex;
 
+use pam_client::env_list::EnvList;
 use rand::Rng;
 use uuid::Uuid;
 
@@ -106,6 +107,7 @@ impl XorgService {
         display: u32,
         resolution: &ScreenResolution,
         account: &Account,
+        environment: &EnvList
     ) -> Result<ProcessHandle, ApplicationError> {
         debug!("Launching x server on display :{}", display);
         let authority_file_path = format!(
@@ -129,6 +131,8 @@ impl XorgService {
         let xdg_run_time_dir = format!("{}/{}", self.settings.authority_path(), account.uid());
         let (screen_width, screen_height) = resolution.split();
         let mut command = Command::new("Xorg");
+
+        
         command
             .args([
                 display.as_str(),
@@ -138,6 +142,7 @@ impl XorgService {
                 config,
                 "-verbose",
             ])
+            .env_clear()
             .env("DISPLAY", display)
             .env("XAUTHORITY", authority_file_path)
             .env("HOME", account.home())
@@ -145,6 +150,7 @@ impl XorgService {
             .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
             .env("XRDP_START_WIDTH", screen_width.to_string())
             .env("XRDP_START_HEIGHT", screen_height.to_string())
+            .envs(environment.iter_tuples())
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
@@ -160,6 +166,7 @@ impl XorgService {
         session_id: &Uuid,
         display: u32,
         account: &Account,
+        environment: &EnvList
     ) -> Result<ProcessHandle, ApplicationError> {
         let authority_file_path = format!(
             "{}/{}/webx-session-manager/Xauthority",
@@ -184,10 +191,12 @@ impl XorgService {
         let mut command = Command::new(self.settings.window_manager());
 
         command
+            .env_clear()
             .env("DISPLAY", display)
             .env("XAUTHORITY", authority_file_path)
             .env("HOME", account.home())
             .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
+            .envs(environment.iter_tuples())
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
@@ -266,7 +275,8 @@ impl XorgService {
     pub fn execute(
         &self,
         account: &Account,
-        resolution: ScreenResolution
+        resolution: ScreenResolution,
+        environment: EnvList
     ) -> Result<Session, ApplicationError> {
         let display_id = self.get_next_display()?;
         self.create_token(display_id, account)?;
@@ -274,8 +284,8 @@ impl XorgService {
         let session_id = Uuid::new_v4();
 
         // spawn the x server and the window manager
-        let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account)?;       
-        let window_manager = self.spawn_window_manager(&session_id, display_id, account)?;
+        let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account, &environment)?;       
+        let window_manager = self.spawn_window_manager(&session_id, display_id, account, &environment)?;
 
         info!(
             "Running display {} on process id {} with window manager process id {}",
@@ -304,10 +314,7 @@ impl XorgService {
             sessions.push(session.clone());
             return Ok(session);
         }
-        return Err(ApplicationError::session(format!(
-            "Could not start session for user: {}",
-            account
-        )));
+        return Err(ApplicationError::session(format!("Could not start session for user: {}", account)));
     }
 
     fn get_next_available_display(&self, id: u32) -> Result<u32, ApplicationError> {

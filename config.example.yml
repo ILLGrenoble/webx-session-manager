@@ -11,7 +11,7 @@ transport:
 
 authentication:
   # the pam service to use for authenticating
-  service: login
+  service: webx
   
 xorg:
   # path to where the x lock files are stored
@@ -19,7 +19,7 @@ xorg:
   # path to where the xauthority files should be stored
   authority_path: /run/user
   # path for the xorg configuration
-  config_path: /etc/webx/webx-session-manager/xorg.conf
+  config_path: /etc/X11/xrdp/xorg.conf
   # ext available display will start from this offset
   display_offset: 60
   # script to launch the window manager of your choice

@@ -1129,6 +1129,7 @@ dependencies = [
  "prettytable-rs",
  "rand",
  "regex",
+ "rpassword",
  "serde 1.0.133",
  "serde_json",
  "shared_child",

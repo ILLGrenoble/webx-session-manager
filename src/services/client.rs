@@ -1,6 +1,6 @@
 use prettytable::{Cell, Row, Table};
 
-use crate::{authentication::Credentials, common::{ApplicationError, Request, Response, ScreenResolution}};
+use crate::{authentication::{Credentials}, common::{ApplicationError, Request, Response, ScreenResolution}};
 
 pub struct Client {
     socket: zmq::Socket,

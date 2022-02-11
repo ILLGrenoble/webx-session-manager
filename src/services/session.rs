@@ -25,7 +25,7 @@ impl SessionService {
         return match self.authenticator.authenticate(credentials) {
             Ok(_) => {
                 debug!("Successfully authenticated user: {}", &credentials.username());
-                if let Some(user) = User::from_name(credentials.username()).unwrap() {
+                if let Ok(Some(user)) = User::from_name(credentials.username()) {
                     debug!("Found user: {}", &credentials.username());
                     if let Some(account) = Account::from_user(user) {
 

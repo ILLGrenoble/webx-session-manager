@@ -22,7 +22,7 @@ pub struct Server {
 
 impl Server {
     pub fn new(settings: Settings, context: zmq::Context) -> Self {
-        let authenticator = Authenticator::new(settings.authentication().to_owned());
+        let authenticator = Authenticator::new(settings.authentication().service().to_owned());
         let xorg_service = XorgService::new(settings.xorg().to_owned());
         let session_service = SessionService::new(authenticator, xorg_service);
         let ipc = settings.transport().ipc().to_owned();

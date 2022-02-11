@@ -25,6 +25,7 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 shared_child = "1.0.0"
 tokio = { version = "1.6.0", features = ["full", "time"] }
 signal-hook = "0.3.13"
+rpassword = "5.0.1"
 
 
 [[bin]]

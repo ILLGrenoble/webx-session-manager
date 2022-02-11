@@ -1,7 +1,9 @@
+use nix::unistd::User;
 use structopt::StructOpt;
 
-use webx_session_manager::{authentication::Credentials, common::{ApplicationError, ScreenResolution}, services::Client};
-
+use webx_session_manager::{authentication::{Credentials, Authenticator}, common::{ApplicationError, ScreenResolution, Account}, services::Client};
+use rpassword::read_password;
+use std::io::Write;
 #[derive(StructOpt)]
 #[structopt(about = "WebX Session Manager Client")]
 enum Command {
@@ -14,9 +16,6 @@ enum Command {
         username: String,
 
         #[structopt(short, long)]
-        password: String,
-
-        #[structopt(short, long)]
         width: u32,
 
         #[structopt(short, long)]
@@ -24,7 +23,14 @@ enum Command {
 
         #[structopt(long, default_value = "/tmp/webx-session-manager.ipc")]
         ipc: String
-    }
+    },
+    Authenticate {
+        #[structopt(short, long)]
+        username: String,
+
+        #[structopt(short, long)]
+        service: String,
+    },
 }
 
 pub fn main() -> Result<(), ApplicationError> {
@@ -34,11 +40,40 @@ pub fn main() -> Result<(), ApplicationError> {
             let client = Client::new(ipc)?;
             client.who()?
         }
-        Command::Login { ipc, username, password, width, height } => {
+        Command::Login { ipc, username, width, height } => {
+            print!("Enter password:");
+            std::io::stdout().flush().unwrap();
+            let password = read_password().unwrap();
             let credentials = Credentials::new(username, password);
             let resolution = ScreenResolution::new(width, height);
             let client = Client::new(ipc)?;
             client.login(credentials, resolution)?;
+        },
+        Command::Authenticate { service, username} => {
+            print!("Enter password:");
+            std::io::stdout().flush().unwrap();
+            let password = read_password().unwrap();
+
+            let credentials = Credentials::new(username, password);
+            let authenticator = Authenticator::new(service);
+        
+            match authenticator.authenticate(&credentials) {
+                Ok(environment) => {
+                    println!("Authenticated user: {}", &credentials.username());
+                    if let Ok(Some(user)) = User::from_name(&credentials.username()) {
+                        let account = Account::from_user(user);
+                        println!("Account: {}", account.unwrap());
+                        println!("Environment: {}", environment);
+                    } else {
+                        eprintln!("Could not find user account");
+                    }
+                },
+                Err(error) => {
+                    eprintln!("Could not autenticate user: {}", error);
+                }
+            }
+  
+
         }
     }
 

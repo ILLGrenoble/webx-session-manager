@@ -1,5 +1,6 @@
 use std::fmt;
 
+use libc::gid_t;
 use nix::unistd::User;
 use users::get_user_groups;
 
@@ -47,11 +48,17 @@ impl Account {
         let gid = user.gid.as_raw();
         let username = user.name.as_str();
         if let Some(home) = user.dir.to_str() {
-            let groups = get_user_groups(username, gid)
+            let groups: Vec<u32> = get_user_groups(username, gid)
             .unwrap_or_else(|| Vec::new())
             .iter()
+            .filter(|group| {
+                if uid == 0 {
+                    return group.gid() >= (0 as gid_t);
+                }
+                return group.gid() > (0 as gid_t)
+            })
             .map(|group| group.gid())
-            .collect::<Vec<u32>>();
+            .collect();
 
             let account = Account::new(username, home, uid, gid, groups);
             return Some(account);

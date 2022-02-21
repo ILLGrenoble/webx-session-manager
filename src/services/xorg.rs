@@ -84,7 +84,7 @@ impl XorgService {
         let display = format!(":{}", display);
         Command::new("xauth")
             .arg("-f")
-            .arg(file_path)
+            .arg(&file_path)
             .arg("add")
             .arg(display)
             .arg(".")
@@ -92,6 +92,8 @@ impl XorgService {
             .uid(account.uid())
             .gid(webx_user.gid.as_raw())
             .output()?;
+
+        chmod(&file_path, 0o770)?;
         Ok(())
     }
 
@@ -192,13 +194,12 @@ impl XorgService {
         ProcessHandle::new(&mut command)
     }
 
-
-    fn create_session_directory<S>(&self, path: S, mode: u32, uid: u32, gid: u32) -> Result<(), ApplicationError>
-        where S: AsRef<str> {
-        mkdir(path.as_ref())?;
+    fn create_session_directory<S>(&self, path: S, mode: u32, uid: u32, gid: u32) -> Result<(), ApplicationError> where S: AsRef<str> {
+        let path = path.as_ref();
+        mkdir(path)?;
         // ensure permissions and ownership are correct
-        chown(path.as_ref(), uid, gid)?;
-        chmod(path.as_ref(), mode)?;
+        chown(path, uid, gid)?;
+        chmod(path, mode)?;
         Ok(())
     }
 

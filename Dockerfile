@@ -1,5 +1,4 @@
-FROM rust:1.57-slim
-
+FROM rustlang/rust:nightly-slim
 WORKDIR /app
 
 RUN apt update

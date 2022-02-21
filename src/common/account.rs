@@ -1,21 +1,24 @@
 use std::fmt;
 
 use nix::unistd::User;
+use users::get_user_groups;
 
 pub struct Account {
     username: String,
     home: String,
     uid: u32,
     gid: u32,
+    groups: Vec<u32>
 }
 
 impl Account {
-    pub fn new(username: &str, home: &str, uid: u32, gid: u32) -> Self {
+    pub fn new(username: &str, home: &str, uid: u32, gid: u32, groups: Vec<u32>) -> Self {
         Account {
             username: username.into(),
             home: home.into(),
             uid,
             gid,
+            groups
         }
     }
 
@@ -35,14 +38,25 @@ impl Account {
         self.gid
     }
 
+    pub fn groups(&self) -> &[u32] {
+        &self.groups
+    }
+
     pub fn from_user(user: User) -> Option<Account> {
         let uid = user.uid.as_raw();
         let gid = user.gid.as_raw();
         let username = user.name.as_str();
         if let Some(home) = user.dir.to_str() {
-            let account = Account::new(username, home, uid, gid);
+            let groups = get_user_groups(username, gid)
+            .unwrap_or_else(|| Vec::new())
+            .iter()
+            .map(|group| group.gid())
+            .collect::<Vec<u32>>();
+
+            let account = Account::new(username, home, uid, gid, groups);
             return Some(account);
         }
+
         None
     }
 }
@@ -50,6 +64,6 @@ impl Account {
 
 impl fmt::Display for Account {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "username = {}, home = {} uid = {}, gid = {}", self.username, self.home, self.uid, self.gid)
+        write!(formatter, "username = {}, home = {} uid = {}, gid = {}, groups = {:?}", self.username, self.home, self.uid, self.gid, &self.groups)
     }
 }

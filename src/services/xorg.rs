@@ -152,7 +152,8 @@ impl XorgService {
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
             .uid(account.uid())
-            .gid(account.gid());
+            .gid(account.gid())
+            .groups(account.groups());
 
         debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
         ProcessHandle::new(&mut command)
@@ -187,6 +188,7 @@ impl XorgService {
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
+            .groups(account.groups())
             .uid(account.uid())
             .gid(account.gid());
 

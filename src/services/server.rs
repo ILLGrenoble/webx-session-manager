@@ -73,6 +73,9 @@ impl Server {
     fn clean_up(&self) -> Result<(), ApplicationError> {
         debug!("Deleting ipc socket descriptor");
         fs::remove_file(&self.ipc)?;
+        // killing all sessions
+        debug!("Killing all sessions...");
+        self.session_service.kill_all()?;
         Ok(())
     }
 

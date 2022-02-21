@@ -17,8 +17,11 @@ impl ProcessHandle {
         })
     }
 
-    pub fn kill(&self) {
-        let _ = self.process.kill();
+    pub fn kill(&self) -> Result<(), ApplicationError> {
+        if let Err(error) = self.process.kill() {
+            error!("Could not kill process: {}", error);
+        }
+        Ok(())
     }
 
     pub fn pid(&self) -> u32 {

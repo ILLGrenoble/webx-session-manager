@@ -16,8 +16,9 @@ authentication:
 xorg:
   # path to where the x lock files are stored
   lock_path: /tmp
-  # path to where the xauthority files should be stored
-  authority_path: /run/user
+  # path to where session files should be stored
+  # for example the XAuthority for a session will be stored here
+  sessions_path: /run/webx/sessions
   # path for the xorg configuration
   config_path: /etc/X11/xrdp/xorg.conf
   # ext available display will start from this offset

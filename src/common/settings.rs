@@ -22,7 +22,7 @@ pub struct TransportSettings {
 pub struct XorgSettings {
     log_path: String,
     lock_path: String,
-    authority_path: String,
+    sessions_path: String,
     config_path: String,
     display_offset: u32,
     window_manager: String,
@@ -60,10 +60,13 @@ impl XorgSettings {
         &self.lock_path
     }
 
-    pub fn authority_path(&self) -> &str {
-        &self.authority_path
+    pub fn sessions_path(&self) -> &str {
+        &self.sessions_path
     }
 
+    pub fn sessions_path_for_uid(&self, uid: u32) -> String {
+        format!("{}/{}", self.sessions_path, uid)
+    }
     pub fn display_offset(&self) -> u32 {
         self.display_offset
     }
@@ -154,8 +157,8 @@ impl Settings {
         }
 
 
-        if self.xorg.authority_path.is_empty() {
-            eprintln!("Please specify a path for where to store the xauthority files (i.e. /run/user");
+        if self.xorg.sessions_path.is_empty() {
+            eprintln!("Please specify a path for where to store the session files (i.e. /run/webx/sessions");
             return false;
         }
 

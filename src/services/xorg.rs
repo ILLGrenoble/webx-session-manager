@@ -152,7 +152,7 @@ impl XorgService {
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
             .uid(account.uid())
-            .gid(webx_user.gid.as_raw());
+            .gid(account.gid());
 
         debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
         ProcessHandle::new(&mut command)
@@ -188,7 +188,7 @@ impl XorgService {
             .stdout(std::process::Stdio::from(stdout_file))
             .stderr(std::process::Stdio::from(stderr_file))
             .uid(account.uid())
-            .gid(webx_user.gid.as_raw());
+            .gid(account.gid());
 
         debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
         ProcessHandle::new(&mut command)

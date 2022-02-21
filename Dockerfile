@@ -2,7 +2,7 @@ FROM rustlang/rust:nightly-slim
 WORKDIR /app
 
 RUN apt update
-RUN apt install -y libzmq3-dev pkg-config dpkg-dev libclang-dev libpam-dev
+RUN apt install -y libzmq3-dev pkg-config dpkg-dev libclang-dev libpam-dev clang
 
 COPY . .
 

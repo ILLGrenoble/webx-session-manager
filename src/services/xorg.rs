@@ -280,7 +280,7 @@ impl XorgService {
         );
 
         let session = Session::new(
-            Uuid::new_v4(),
+            session_id,
             account.username().into(),
             account.uid(),
             format!(":{}", display_id),

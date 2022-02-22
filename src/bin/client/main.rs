@@ -1,4 +1,4 @@
-use nix::unistd::User;
+use nix::unistd::{User, Uid};
 use structopt::StructOpt;
 
 use webx_session_manager::{authentication::{Credentials, Authenticator}, common::{ApplicationError, ScreenResolution, Account}, services::Client};
@@ -41,6 +41,12 @@ enum Command {
 }
 
 pub fn main() -> Result<(), ApplicationError> {
+
+    if !Uid::effective().is_root() {
+        eprintln!("You must run this executable with root permissions");
+        std::process::exit(1);
+    }
+    
     let command = Command::from_args();
     match command {
         Command::Who {ipc} => {

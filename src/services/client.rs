@@ -58,7 +58,7 @@ impl Client {
         Ok(())
     }
 
-    /// login the user and return the create session
+    /// login the user and return the created session
     pub fn login(&self, credentials: Credentials, resolution: ScreenResolution) -> Result<(), ApplicationError> {
         println!("Logging in user: {}", credentials.username());
 
@@ -73,13 +73,36 @@ impl Client {
                 Response::Login(session) => {
                     println!("Session launched: {}", session);
                 }
-                Response::Error { message } => println!("Got an error response: {}", message),
+                Response::Error { message } => println!("Received an error response: {}", message),
                 _ => println!("Received an unknown response")
             }
         }
 
         Ok(())
     }
+
+
+    /// find the given session identifier and logout the session
+    pub fn logout(&self, id: String) -> Result<(), ApplicationError> {
+        println!("Logging out session {}", id);
+
+        let request = Request::Logout {
+            id
+        };
+        if let Ok(response) = self.send(request) {
+            match response {
+                Response::Logout => {
+                    println!("Session logged out successfully");
+                }
+                Response::Error { message } => println!("Received an error response: {}", message),
+                _ => println!("Received an unknown response")
+            }
+        }
+
+        Ok(())
+    }
+
+
 
     fn send(&self, request: Request) -> Result<Response, ApplicationError> {
         let request = self.encode(request).ok_or_else(|| ApplicationError::transport("could not encode the request"))?;

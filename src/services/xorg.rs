@@ -103,7 +103,6 @@ impl XorgService {
         display: u32,
         resolution: &ScreenResolution,
         account: &Account,
-        webx_user: &User,
         environment: &EnvList,
     ) -> Result<ProcessHandle, ApplicationError> {
         debug!("Launching x server on display :{}", display);
@@ -164,7 +163,6 @@ impl XorgService {
         session_id: &Uuid,
         display: u32,
         account: &Account,
-        webx_user: &User,
         environment: &EnvList,
     ) -> Result<ProcessHandle, ApplicationError> {
         let authority_file_path = format!("{}/{}/Xauthority", self.settings.sessions_path(), account.uid());
@@ -239,6 +237,17 @@ impl XorgService {
         Ok(())
     }
 
+
+    pub fn get_by_id(&self, id: &Uuid) -> Option<Session>{
+        if let Some(sessions) = self.get_all_sessions() {
+            let session = sessions
+                .into_iter()
+                .find(|session| session.id() == id);
+            return session;
+        }
+        None
+    }
+
     // create the xauth token and launch the x11 server and window manager
     pub fn execute(
         &self,
@@ -254,8 +263,8 @@ impl XorgService {
         let session_id = Uuid::new_v4();
 
         // spawn the x server and the window manager
-        let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account, &webx_user, &environment)?;
-        let window_manager = self.spawn_window_manager(&session_id, display_id, account, &webx_user, &environment)?;
+        let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account, &environment)?;
+        let window_manager = self.spawn_window_manager(&session_id, display_id, account, &environment)?;
 
         info!(
             "Running xorg display {} on process id {} with window manager process id {}",

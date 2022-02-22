@@ -1,7 +1,9 @@
 use std::fs;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use nix::unistd::User;
+use uuid::Uuid;
 
 use crate::{
     authentication::{Authenticator, Credentials},
@@ -115,6 +117,8 @@ impl Server {
                         self.handle_login_request(rep_socket, credentials, resolution)
                     }
                     Request::Who => self.handle_who_request(rep_socket),
+                    Request::Logout { id } => self.handle_logout_request(rep_socket, id),
+
                 },
                 None => self.handle_unknown_request(rep_socket),
             }
@@ -150,6 +154,8 @@ impl Server {
         }
     }
 
+    
+
     fn handle_who_request(&self, rep_socket: &zmq::Socket) {
         debug!("Listing sessions");
         let sessions = self.session_service.get_all().unwrap_or_default();
@@ -159,6 +165,28 @@ impl Server {
         if let Err(error) = rep_socket.send(&json[..], 0) {
             error!("Failed to send response message: {}", error);
         }
+    }
+
+    fn handle_logout_request(&self, rep_socket: &zmq::Socket, id: String) {
+        let response = match Uuid::from_str(&id) {
+            Ok(id) => match self.session_service.kill_by_id(id) {
+                Ok(_) => Response::Logout,
+                Err(error) => {
+                    error!("Could not logout session: {}", error);
+                    Response::Error { message: format!("{}", error)}
+                }
+            },
+            Err(_) => {
+                error!("Invalid session id {} provided", id);
+                Response::Error { message: format!("Invald session id {} provided", id) }
+            }
+        };
+        
+        let json = self.encoder.encode(response).unwrap_or_else(|| "".into());
+        if let Err(error) = rep_socket.send(&json[..], 0) {
+            error!("Failed to send response message: {}", error);
+        }
+
     }
 
 }

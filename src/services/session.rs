@@ -1,4 +1,5 @@
 use nix::unistd::User;
+use uuid::Uuid;
 
 use crate::{
     authentication::{Authenticator, Credentials},
@@ -66,6 +67,17 @@ impl SessionService {
         None
     }
 
+    pub fn kill_by_id(&self, id: Uuid) -> Result<(), ApplicationError> {
+        if let Some(session ) = self.xorg_service.get_by_id(&id) {
+            // kill the processes
+            // the session will be automatically removed by the clean up procedure
+            session.window_manager().kill()?;
+            session.xorg().kill()?;
+            return Ok(());
+        }
+        Err(ApplicationError::session(format!("Session {} not found", id)))
+    }
+
     pub fn kill_all(&self) -> Result<(), ApplicationError> {
         if let Some(sessions) = self.xorg_service.get_all_sessions() {
             for session in sessions {
@@ -75,6 +87,7 @@ impl SessionService {
         }
         Ok(())
     }
+
 
     // clean up zombie session
     pub fn clean_up(&self) {

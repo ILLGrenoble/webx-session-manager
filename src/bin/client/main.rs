@@ -24,6 +24,13 @@ enum Command {
         #[structopt(long, default_value = "/tmp/webx-session-manager.ipc")]
         ipc: String
     },
+    Logout {
+        #[structopt(short, long)]
+        id: String,
+
+        #[structopt(long, default_value = "/tmp/webx-session-manager.ipc")]
+        ipc: String
+    },
     Authenticate {
         #[structopt(short, long)]
         username: String,
@@ -49,6 +56,10 @@ pub fn main() -> Result<(), ApplicationError> {
             let client = Client::new(ipc)?;
             client.login(credentials, resolution)?;
         },
+        Command::Logout  { ipc, id} => {
+            let client = Client::new(ipc)?;
+            client.logout(id)?; 
+        }
         Command::Authenticate { service, username} => {
             print!("Enter password:");
             std::io::stdout().flush().unwrap();

@@ -12,4 +12,5 @@ pub enum Response {
     Error { message: String },
     #[serde(rename = "logout")]
     Logout,
+    
 }

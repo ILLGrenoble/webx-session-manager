@@ -145,7 +145,7 @@ impl Server {
             },
             Err(error) => {
                 error!("{}", error);
-                Response::Error { message: format!("error creating session: {}", error.to_string()) }
+                Response::Error { message: format!("Error creating session: {}", error) }
             }
         };
         let json = self.encoder.encode(response).unwrap_or_else(|| "".into());

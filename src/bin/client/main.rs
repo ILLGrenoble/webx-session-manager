@@ -71,7 +71,7 @@ pub fn main() -> Result<(), ApplicationError> {
             match authenticator.authenticate(&credentials) {
                 Ok(environment) => {
                     println!("Authenticated user: {}", &credentials.username());
-                    if let Ok(Some(user)) = User::from_name(&credentials.username()) {
+                    if let Ok(Some(user)) = User::from_name(credentials.username()) {
                         let account = Account::from_user(user);
                         println!("Account: {}", account.unwrap());
                         println!("Environment: {}", environment);

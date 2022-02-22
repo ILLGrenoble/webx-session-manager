@@ -11,9 +11,9 @@ pub struct ProcessHandle {
 }
 
 impl ProcessHandle {
-    pub fn new(mut command: &mut Command) -> Result<ProcessHandle, ApplicationError> {
+    pub fn new(command: &mut Command) -> Result<ProcessHandle, ApplicationError> {
         Ok(ProcessHandle {
-            process: Arc::new(SharedChild::spawn(&mut command)?),
+            process: Arc::new(SharedChild::spawn(command)?),
         })
     }
 

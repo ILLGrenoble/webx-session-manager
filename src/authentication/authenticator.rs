@@ -21,7 +21,7 @@ impl Authenticator {
         debug!("Authenticating user {} for service {}", credentials.username(), service);
         let conversation =
             Conversation::with_credentials(credentials.username(), credentials.password());
-        let mut context = Context::new(&service, None, conversation)?;
+        let mut context = Context::new(service, None, conversation)?;
 
         context.authenticate(Flag::NONE)?;
         let session = context.open_session(Flag::NONE)?;

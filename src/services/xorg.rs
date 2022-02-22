@@ -154,7 +154,7 @@ impl XorgService {
             .gid(account.gid())
             .groups(account.groups());
 
-        debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
+        debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
         ProcessHandle::new(&mut command)
     }
 
@@ -190,7 +190,7 @@ impl XorgService {
             .uid(account.uid())
             .gid(account.gid());
 
-        debug!("Spawning command: {}", format!("{:?}", command).replace("\"", ""));
+        debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
         ProcessHandle::new(&mut command)
     }
 
@@ -237,7 +237,6 @@ impl XorgService {
         Ok(())
     }
 
-
     pub fn get_by_id(&self, id: &Uuid) -> Option<Session>{
         if let Some(sessions) = self.get_all_sessions() {
             let session = sessions
@@ -258,7 +257,7 @@ impl XorgService {
     ) -> Result<Session, ApplicationError> {
         let display_id = self.get_next_display()?;
 
-        self.create_token(display_id, account, &webx_user)?;
+        self.create_token(display_id, account, webx_user)?;
 
         let session_id = Uuid::new_v4();
 

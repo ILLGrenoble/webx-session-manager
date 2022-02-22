@@ -50,6 +50,7 @@ systemd-units = {}
 conf-files = ["/etc/webx/webx-session-manager-config.yml", "/etc/webx/webx-session-manager/startwm.sh"]
 assets = [
     ["target/release/server", "usr/bin/webx-session-manager", "755"],
+    ["target/release/client", "usr/bin/webx-session-client", "755"],
     ["config.example.yml", "/etc/webx/webx-session-manager-config.yml", "644"],
     ["bin/pam-webx", "/etc/pam.d/webx", "644"],
     ["bin/startwm.sh", "/etc/webx/webx-session-manager/startwm.sh", "755"],

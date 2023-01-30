@@ -9,6 +9,9 @@ COPY . .
 RUN cargo install cargo-deb
 RUN cargo deb
 
+# Save the version to a file
+RUN awk -F ' = ' '$1 ~ /version/ { gsub(/[\"]/, "", $2); printf("%s",$2) }' Cargo.toml > VERSION
+
 # to obtain built deb package:
 # docker build -t webx-sesman-builder .
 # docker create -ti --name webx-sesman-builder webx-sesman-builder bash

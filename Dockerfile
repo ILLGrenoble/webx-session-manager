@@ -17,3 +17,4 @@ RUN awk -F ' = ' '$1 ~ /version/ { gsub(/[\"]/, "", $2); printf("%s",$2) }' Carg
 # docker create -ti --name webx-sesman-builder webx-sesman-builder bash
 # docker cp webx-sesman-builder:/app/target/debian/. .
 # docker rm -f webx-sesman-builder
+

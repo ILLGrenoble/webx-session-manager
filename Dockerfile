@@ -18,15 +18,13 @@ WORKDIR /app
 
 # Install package dependencies.
 RUN apt-get update
-RUN apt install -y apt-utils curl gcc
+RUN apt install -y apt-utils curl gcc libzmq3-dev pkg-config dpkg-dev libclang-dev libpam-dev clang
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf > /tmp/rustup-init.sh \
     && chmod +x /tmp/rustup-init.sh \
     && sh /tmp/rustup-init.sh -y \
     && rm -rf /tmp/rustup-init.sh
-
-RUN apt install -y libzmq3-dev pkg-config dpkg-dev libclang-dev libpam-dev clang
 
 COPY . .
 

@@ -2,6 +2,7 @@ use std::fs::{self, File};
 use std::os::unix::prelude::CommandExt;
 use std::process::Command;
 use std::sync::Mutex;
+use std::{thread, time};
 
 use nix::unistd::User;
 use pam_client::env_list::EnvList;
@@ -93,7 +94,7 @@ impl XorgService {
             .gid(webx_user.gid.as_raw())
             .output()?;
 
-        chmod(&file_path, 0o770)?;
+        chmod(&file_path, 0o750)?;
         Ok(())
     }
 
@@ -154,6 +155,8 @@ impl XorgService {
             .gid(account.gid())
             .groups(account.groups());
 
+        self.add_xdg_config_home_env(&mut command, &account);
+
         debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
         ProcessHandle::new(&mut command)
     }
@@ -190,6 +193,8 @@ impl XorgService {
             .uid(account.uid())
             .gid(account.gid());
 
+        self.add_xdg_config_home_env(&mut command, &account);
+
         debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
         ProcessHandle::new(&mut command)
     }
@@ -217,6 +222,19 @@ impl XorgService {
         Ok(())
     }
 
+    fn add_xdg_config_home_env(&self, command: &mut Command, account: &Account) {
+        if !self.settings.xdg_config_home().is_empty() {
+            if self.settings.xdg_config_home().starts_with("/") {
+                command.env("XDG_CONFIG_HOME", self.settings.xdg_config_home());
+
+            } else {
+                let xdg_config_home = format!("{}/{}", account.home(), self.settings.xdg_config_home());
+
+                command.env("XDG_CONFIG_HOME", xdg_config_home);
+            }
+        }
+    }
+
     // create the required directories and files
     pub fn create_user_files(&self, account: &Account, webx_user: &User) -> Result<(), ApplicationError> {
         debug!("Creating user files for user: {}", account.username());
@@ -224,13 +242,13 @@ impl XorgService {
         let uid = account.uid();
         self.create_session_directory(
             format!("{}/{}", self.settings.sessions_path(), uid),
-            0o770,
+            0o750,
             uid,
             gid,
         )?;
         self.create_user_file(
             format!("{}/{}/Xauthority", self.settings.sessions_path(), uid),
-            0o770,
+            0o750,
             uid,
             gid,
         )?;
@@ -261,8 +279,13 @@ impl XorgService {
 
         let session_id = Uuid::new_v4();
 
-        // spawn the x server and the window manager
+        // spawn the x server
         let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account, &environment)?;
+
+        // Sleep for 2 seconds (wait for x server to start)
+        thread::sleep(time::Duration::from_millis(2000));
+
+        // spawn the window manager
         let window_manager = self.spawn_window_manager(&session_id, display_id, account, &environment)?;
 
         info!(

@@ -92,7 +92,7 @@ pub fn bootstrap(settings: &Settings) -> Result<(), ApplicationError> {
         fs::mkdir(sessions_path)?;
         // ensure permissions and ownership are correct
         fs::chown(sessions_path, user.uid.as_raw(), user.gid.as_raw())?;
-        fs::chmod(sessions_path, 0o775)?;
+        fs::chmod(sessions_path, 0o755)?;
     } else {
         return Err(ApplicationError::environment("Could not create sessions directory. Check the user 'webx' exists"));
     }

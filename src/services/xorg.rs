@@ -125,7 +125,7 @@ impl XorgService {
             session_id.to_simple()
         ))?;
 
-        let xdg_run_time_dir = format!("{}/{}", self.settings.sessions_path(), account.uid());
+        // let xdg_run_time_dir = format!("{}/{}", self.settings.sessions_path(), account.uid());
         let (screen_width, screen_height) = resolution.split();
         let mut command = Command::new("Xorg");
 
@@ -144,7 +144,7 @@ impl XorgService {
             .env("XAUTHORITY", authority_file_path)
             .env("HOME", account.home())
             .env("XORG_RUN_AS_USER_OK", "1")
-            .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
+            // .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
             .env("XRDP_START_WIDTH", screen_width.to_string())
             .env("XRDP_START_HEIGHT", screen_height.to_string())
             .envs(environment.iter_tuples())
@@ -155,7 +155,6 @@ impl XorgService {
             .gid(account.gid())
             .groups(account.groups());
 
-        self.add_xdg_config_home_env(&mut command, &account);
 
         debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
         ProcessHandle::new(&mut command)
@@ -175,7 +174,7 @@ impl XorgService {
         let stdout_file = File::create(&format!("{}/{}.wm.out.log", log_path, session_id.to_simple()))?;
         let stderr_file = File::create(&format!("{}/{}.wm.err.log", log_path, session_id.to_simple()))?;
 
-        let xdg_run_time_dir = self.settings.sessions_path_for_uid(account.uid());
+        // let xdg_run_time_dir = self.settings.sessions_path_for_uid(account.uid());
 
         let mut command = Command::new(self.settings.window_manager());
 
@@ -184,7 +183,7 @@ impl XorgService {
             .env("DISPLAY", display)
             .env("XAUTHORITY", authority_file_path)
             .env("HOME", account.home())
-            .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
+            // .env("XDG_RUNTIME_DIR", xdg_run_time_dir)
             .envs(environment.iter_tuples())
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
@@ -192,8 +191,6 @@ impl XorgService {
             .groups(account.groups())
             .uid(account.uid())
             .gid(account.gid());
-
-        self.add_xdg_config_home_env(&mut command, &account);
 
         debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
         ProcessHandle::new(&mut command)
@@ -220,19 +217,6 @@ impl XorgService {
         debug!("Changing ownership of file to {}:{}", uid, gid);
         chown(path, uid, gid)?;
         Ok(())
-    }
-
-    fn add_xdg_config_home_env(&self, command: &mut Command, account: &Account) {
-        if !self.settings.xdg_config_home().is_empty() {
-            if self.settings.xdg_config_home().starts_with("/") {
-                command.env("XDG_CONFIG_HOME", self.settings.xdg_config_home());
-
-            } else {
-                let xdg_config_home = format!("{}/{}", account.home(), self.settings.xdg_config_home());
-
-                command.env("XDG_CONFIG_HOME", xdg_config_home);
-            }
-        }
     }
 
     // create the required directories and files

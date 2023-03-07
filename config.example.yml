@@ -26,6 +26,4 @@ xorg:
   # script to launch the window manager of your choice
   window_manager: /etc/webx/webx-session-manager/startwm.sh
   log_path: /var/log/webx/session-manager/sessions
-  # Optionally specify the XDG_CONFIG_HOME
-  xdg_config_home: ""
   

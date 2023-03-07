@@ -26,7 +26,6 @@ pub struct XorgSettings {
     config_path: String,
     display_offset: u32,
     window_manager: String,
-    xdg_config_home: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -82,10 +81,6 @@ impl XorgSettings {
 
     pub fn log_path(&self) -> &str {
         &self.log_path
-    }
-
-    pub fn xdg_config_home(&self) -> &str {
-        &self.xdg_config_home
     }
 }
 

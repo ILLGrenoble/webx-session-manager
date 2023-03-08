@@ -94,7 +94,7 @@ impl XorgService {
             .gid(webx_user.gid.as_raw())
             .output()?;
 
-        chmod(&file_path, 0o750)?;
+        chmod(&file_path, 0o640)?;
         Ok(())
     }
 
@@ -232,7 +232,7 @@ impl XorgService {
         )?;
         self.create_user_file(
             format!("{}/{}/Xauthority", self.settings.sessions_path(), uid),
-            0o750,
+            0o640,
             uid,
             gid,
         )?;

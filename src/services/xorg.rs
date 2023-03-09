@@ -125,7 +125,7 @@ impl XorgService {
             session_id.to_simple()
         ))?;
 
-        // let xdg_run_time_dir = format!("{}/{}", self.settings.sessions_path(), account.uid());
+        let xdg_run_time_dir = format!("{}/{}", self.settings.sessions_path(), account.uid());
         let (screen_width, screen_height) = resolution.split();
         let mut command = Command::new("Xorg");
 
@@ -174,7 +174,7 @@ impl XorgService {
         let stdout_file = File::create(&format!("{}/{}.wm.out.log", log_path, session_id.to_simple()))?;
         let stderr_file = File::create(&format!("{}/{}.wm.err.log", log_path, session_id.to_simple()))?;
 
-        // let xdg_run_time_dir = self.settings.sessions_path_for_uid(account.uid());
+        let xdg_run_time_dir = self.settings.sessions_path_for_uid(account.uid());
 
         let mut command = Command::new(self.settings.window_manager());
 

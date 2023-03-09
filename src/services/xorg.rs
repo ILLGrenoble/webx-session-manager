@@ -266,8 +266,8 @@ impl XorgService {
         // spawn the x server
         let xorg = self.spawn_x_server(&session_id, display_id, &resolution, account, &environment)?;
 
-        // Sleep for 2 seconds (wait for x server to start)
-        // thread::sleep(time::Duration::from_millis(3000));
+        // Sleep for 1 second (wait for x server to start)
+        thread::sleep(time::Duration::from_millis(1000));
 
         // spawn the window manager
         let window_manager = self.spawn_window_manager(&session_id, display_id, account, &environment)?;

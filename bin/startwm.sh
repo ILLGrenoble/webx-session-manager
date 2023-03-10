@@ -25,6 +25,9 @@ pre_start()
       fi
     fi
   fi
+
+  xhost +si:localuser:$(id -un)
+
   return 0
 }
 
@@ -82,13 +85,15 @@ wm_start()
       get_xdg_session_startupcmd "$DESKTOP_SESSION"
     fi
 
-    . /etc/X11/Xsession
+    #. /etc/X11/Xsession
+    startxfce4
+
     post_start
     exit 0
   fi
 
   pre_start
-  startxfce4
+  xterm
   post_start
 }
 

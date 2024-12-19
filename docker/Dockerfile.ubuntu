@@ -18,9 +18,6 @@ RUN ~/.cargo/bin/rustup default nightly
 RUN ~/.cargo/bin/cargo install cargo-deb
 RUN ~/.cargo/bin/cargo deb
 
-# Save the version to a file
-RUN awk -F ' = ' '$1 ~ /version/ { gsub(/[\"]/, "", $2); printf("%s",$2) }' Cargo.toml > VERSION
-
 FROM alpine:3
 
 WORKDIR /app
@@ -28,7 +25,6 @@ WORKDIR /app
 # Copy package to standard directory
 RUN mkdir -p target/ubuntu
 COPY --from=ubuntu /app/target/debian/* target/ubuntu/
-COPY --from=ubuntu /app/VERSION .
 
 # to obtain built deb package:
 # docker build -t webx-sesman-builder .

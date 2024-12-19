@@ -1,7 +1,6 @@
 [package]
 name = "webx-session-manager"
 description = "The WebX Session Manager listens for session requests, authenticates a user's credentials and creates sessions by launching Xorg and window manager processes."
-version = "0.1.0"
 edition = "2018"
 
 [dependencies]

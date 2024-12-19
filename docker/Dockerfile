@@ -10,9 +10,6 @@ COPY . .
 RUN cargo install cargo-deb
 RUN cargo deb
 
-# Save the version to a file
-RUN awk -F ' = ' '$1 ~ /version/ { gsub(/[\"]/, "", $2); printf("%s",$2) }' Cargo.toml > VERSION
-
 FROM ubuntu:22.04 as ubuntu
 
 WORKDIR /app

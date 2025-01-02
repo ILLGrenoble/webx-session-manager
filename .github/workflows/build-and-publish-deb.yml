@@ -35,12 +35,12 @@ jobs:
           docker rm -f $CONTAINER_ID
           
           # Find the actual Debian package filename in the `./debian-package` directory
-          DEB_FILE=$(find ./debian-package -name "webx-router_*_amd64.deb")
-          UBUNTU_FILE=$(find ./ubuntu-package -name "webx-router_*_amd64.deb")
+          DEB_FILE=$(find ./debian-package -name "webx-session-manager_*_amd64.deb")
+          UBUNTU_FILE=$(find ./ubuntu-package -name "webx-session-manager_*_amd64.deb")
           
           # Move and rename the files
-          mv "$DEB_FILE" "./debian-package/webx-router_${{ github.ref_name }}_debian_11_amd64.deb"
-          mv "$UBUNTU_FILE" "./debian-package/webx-router_${{ github.ref_name }}_ubuntu_22.04_amd64.deb"
+          mv "$DEB_FILE" "./debian-package/webx-session-manager_${{ github.ref_name }}_debian_11_amd64.deb"
+          mv "$UBUNTU_FILE" "./debian-package/webx-session-manager_${{ github.ref_name }}_ubuntu_22.04_amd64.deb"
 
       - name: Upload Debian artifacts
         uses: actions/upload-artifact@v4

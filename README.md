@@ -89,8 +89,7 @@ The WebX Router can either be launched in a terminal the following command:
 
 #### WebX Session Manager configuration
 
-The configuration file `config.yml` is used to define the logging level, TCP ports, IPC paths, WebX Engine path. This file can be located in the working directory or `/etc/webx/webx-router-config.yml`. Alternatively each configuration value can be overridden by an environment variable, prefixed by WEBX_SESSION_MANAGER. For example, the `xorg: config_path:` configuration value can be overridden by the environment variable `WEBX_SESSION_MANAGER_XORG_CONFIG_PATH`.
-
+The configuration file `config.yml` is used to define the logging level, IPC paths, Xorg config path, Window manager run scripts. An example file is provided (`config.example.yml`). The WebX Session Manager will search for the config file at either `config.yml` in the working directory or `/etc/webx/webx-session-manager-config.yml`. Alternatively each configuration value can be overridden by an environment variable, prefixed by WEBX_SESSION_MANAGER. For example, the `xorg: config_path:` configuration value can be overridden by the environment variable `WEBX_SESSION_MANAGER_XORG_CONFIG_PATH`.
 
 ### Building, running and debugging using the WebX Dev Workspace
 

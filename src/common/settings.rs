@@ -97,12 +97,12 @@ impl Settings {
     pub fn new(config_path: &str) -> Result<Self, ApplicationError> {
         let config_path = Settings::get_config_path(config_path);
 
-        let mut settings_raw = config::Config::default();
-
-        settings_raw.merge(config::File::new(config_path, config::FileFormat::Yaml))?;
-        settings_raw.merge(config::Environment::with_prefix("WEBX_SESSION_MANAGER").separator("__"))?;
-
-        settings_raw.try_into().map_err(|error| error.into())
+        let settings_raw = config::Config::builder()
+            .add_source(config::File::new(config_path, config::FileFormat::Yaml))
+            .add_source(config::Environment::with_prefix("WEBX_SESSION_MANAGER").separator("_"))
+            .build()?;        
+ 
+        settings_raw.try_deserialize().map_err(|error| error.into())
     }
 
 

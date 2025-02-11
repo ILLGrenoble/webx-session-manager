@@ -103,7 +103,7 @@ impl From<&Session> for SessionDto {
         let xorg_process_id = session.xorg().pid();
         let window_manager_process_id = session.window_manager().pid();
         let xauthority_file_path = session.xauthority_file_path();
-        let id  = session.id().to_simple();
+        let id  = session.id().simple();
         let (width, height) = session.resolution().split();
         SessionDto::new(
             id.to_string(),

@@ -64,10 +64,10 @@ impl XorgService {
     // It must be a string of length 32 that can only contain hex values
     fn create_cookie(&self) -> String {
         let characters: &[u8] = b"ABCDEF0123456789";
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         (0..32)
             .map(|_| {
-                let idx = rng.gen_range(0..characters.len());
+                let idx = rng.random_range(0..characters.len());
                 characters[idx] as char
             })
             .flat_map(|c| c.to_lowercase())
@@ -117,12 +117,12 @@ impl XorgService {
         let stdout_file = File::create(&format!(
             "{}/{}.xorg.out.log",
             self.settings.log_path(),
-            session_id.to_simple()
+            session_id.simple()
         ))?;
         let stderr_file = File::create(&format!(
             "{}/{}.xorg.err.log",
             self.settings.log_path(),
-            session_id.to_simple()
+            session_id.simple()
         ))?;
 
         let xdg_run_time_dir = format!("{}/{}", self.settings.sessions_path(), account.uid());
@@ -171,8 +171,8 @@ impl XorgService {
 
         let display = format!(":{}", display);
         let log_path = self.settings.log_path();
-        let stdout_file = File::create(&format!("{}/{}.wm.out.log", log_path, session_id.to_simple()))?;
-        let stderr_file = File::create(&format!("{}/{}.wm.err.log", log_path, session_id.to_simple()))?;
+        let stdout_file = File::create(&format!("{}/{}.wm.out.log", log_path, session_id.simple()))?;
+        let stderr_file = File::create(&format!("{}/{}.wm.err.log", log_path, session_id.simple()))?;
 
         let xdg_run_time_dir = self.settings.sessions_path_for_uid(account.uid());
 

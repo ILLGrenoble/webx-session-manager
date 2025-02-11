@@ -1,6 +1,5 @@
 extern crate dotenv;
 extern crate log;
-extern crate pam_client;
 extern crate serde;
 
 

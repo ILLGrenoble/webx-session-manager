@@ -29,9 +29,17 @@ pub struct XorgSettings {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct FileLoggingSettings {
+    enabled: Option<bool>,
+    path: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct LoggingSettings {
     level: String,
-    path: String,
+    console: Option<bool>,
+    file: Option<FileLoggingSettings>,
+    format: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -48,6 +56,24 @@ impl AuthenticationSettings {
 impl LoggingSettings {
     pub fn level(&self) -> &str {
         &self.level
+    }
+
+    pub fn console(&self) -> &Option<bool> {
+        &self.console
+    }
+
+    pub fn file(&self) -> &Option<FileLoggingSettings> {
+        &self.file
+    }
+
+    pub fn format(&self) -> &Option<String> {
+        &self.format
+    }
+}
+
+impl FileLoggingSettings {
+    pub fn enabled(&self) -> &Option<bool> {
+        &self.enabled
     }
 
     pub fn path(&self) -> &str {
@@ -136,14 +162,18 @@ impl Settings {
     pub fn is_valid(&self) -> bool {
         // check that settings are valid for running the session manager
 
-        if self.logging.path.is_empty() {
-            eprintln!("Please specify a log path");
-            return false;
-        }
-
         if self.logging.level.is_empty() {
             eprintln!("Please specify a logging level (trace, debug, info, error)");
             return false;
+        }
+
+        if self.logging.file.is_some() {
+            let file = self.logging.file.as_ref().unwrap();
+
+            if file.enabled.unwrap() && file.path.is_empty() {
+                eprintln!("Please specify a path for the log file");
+                return false;
+            }
         }
 
         if self.authentication.service.is_empty() {

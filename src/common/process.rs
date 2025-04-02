@@ -5,18 +5,30 @@ use shared_child::SharedChild;
 
 use crate::common::ApplicationError;
 
+/// The `ProcessHandle` struct represents a handle to a linux process managed by the WebX Session Manager.
 #[derive(Clone)]
 pub struct ProcessHandle {
     process: Arc<SharedChild>,
 }
 
 impl ProcessHandle {
+    /// Creates a new `ProcessHandle` by spawning a process using the provided command.
+    ///
+    /// # Arguments
+    /// * `command` - The command to execute.
+    ///
+    /// # Returns
+    /// A `Result` containing the `ProcessHandle` or an `ApplicationError` if the process could not be spawned.
     pub fn new(command: &mut Command) -> Result<ProcessHandle, ApplicationError> {
         Ok(ProcessHandle {
             process: Arc::new(SharedChild::spawn(command)?),
         })
     }
 
+    /// Kills the process associated with this handle.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError` if the process could not be killed.
     pub fn kill(&self) -> Result<(), ApplicationError> {
         if let Err(error) = self.process.kill() {
             error!("Could not kill process: {}", error);
@@ -24,10 +36,15 @@ impl ProcessHandle {
         Ok(())
     }
 
+    /// Returns the process ID (PID) of the process.
     pub fn pid(&self) -> u32 {
         self.process.id()
     }
 
+    /// Checks if the process is still running.
+    ///
+    /// # Returns
+    /// A `Result` indicating success if the process has exited, or an `ApplicationError` if it is still running.
     pub fn is_running(&self) -> Result<(), ApplicationError> {
         let terminate_result = self.process.try_wait();
         match terminate_result {

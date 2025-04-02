@@ -24,6 +24,8 @@ struct Opt {
     config: String,
 }
 
+/// The main entry point for the WebX Session Manager server.
+/// This program initializes the server, sets up logging, and handles termination signals.
 #[tokio::main]
 pub async fn main() -> Result<(), ApplicationError> {
     dotenv().ok();
@@ -39,6 +41,10 @@ pub async fn main() -> Result<(), ApplicationError> {
     Ok(())
 }
 
+/// Runs the main logic of the WebX Session Manager server.
+///
+/// # Returns
+/// A `Result` indicating success or an `ApplicationError`.
 pub async fn run() -> Result<(), ApplicationError> {
     let opt = Opt::from_args();
 
@@ -84,6 +90,14 @@ pub async fn run() -> Result<(), ApplicationError> {
     Ok(())
 }
 
+/// Performs initial setup for the server, including creating necessary directories
+/// and ensuring correct permissions.
+///
+/// # Arguments
+/// * `settings` - The configuration settings for the server.
+///
+/// # Returns
+/// A `Result` indicating success or an `ApplicationError`.
 fn bootstrap(settings: &Settings) -> Result<(), ApplicationError> {
 
     fs::mkdir(settings.xorg().log_path())?;
@@ -102,6 +116,13 @@ fn bootstrap(settings: &Settings) -> Result<(), ApplicationError> {
     Ok(())
 }
 
+/// Configures logging for the server based on the provided settings.
+///
+/// # Arguments
+/// * `settings` - The configuration settings for logging.
+///
+/// # Returns
+/// A `Result` indicating success or a `fern::InitError` if logging setup fails.
 fn setup_logging(settings: &Settings) -> Result<(), fern::InitError> {
     let logging_config = &settings.logging();
 

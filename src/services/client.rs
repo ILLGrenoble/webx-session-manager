@@ -2,12 +2,20 @@ use prettytable::{Cell, Row, Table};
 
 use crate::{authentication::{Credentials}, common::{ApplicationError, Request, Response, ScreenResolution}};
 
+/// The `Client` struct provides functionality for interacting with the WebX Session Manager server,
+/// including sending requests and handling responses.
 pub struct Client {
     socket: zmq::Socket,
 }
 
-
 impl Client {
+    /// Creates a new `Client` instance.
+    ///
+    /// # Arguments
+    /// * `ipc` - The IPC path to the WebX Session Manager server.
+    ///
+    /// # Returns
+    /// A `Result` containing the `Client` or an `ApplicationError` if the client could not be created.
     pub fn new(ipc: String) -> Result<Self, ApplicationError> {
         let context = zmq::Context::new();
         let socket = context.socket(zmq::REQ)?;
@@ -19,8 +27,10 @@ impl Client {
         })
     }
 
-
-    /// get a list of active sessions
+    /// Retrieves a list of all active sessions.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     pub fn who(&self) -> Result<(), ApplicationError> {
         println!("Fetching a list of sessions");
 
@@ -58,7 +68,14 @@ impl Client {
         Ok(())
     }
 
-    /// login the user and return the created session
+    /// Logs in a user and creates a new session.
+    ///
+    /// # Arguments
+    /// * `credentials` - The user's credentials.
+    /// * `resolution` - The screen resolution for the session.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     pub fn login(&self, credentials: Credentials, resolution: ScreenResolution) -> Result<(), ApplicationError> {
         println!("Logging in user: {}", credentials.username());
 
@@ -81,8 +98,13 @@ impl Client {
         Ok(())
     }
 
-
-    /// find the given session identifier and logout the session
+    /// Logs out a session by its unique identifier.
+    ///
+    /// # Arguments
+    /// * `id` - The unique identifier of the session to log out.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     pub fn logout(&self, id: String) -> Result<(), ApplicationError> {
         println!("Logging out session {}", id);
 
@@ -102,8 +124,13 @@ impl Client {
         Ok(())
     }
 
-
-
+    /// Sends a request to the WebX Session Manager server and receives a response.
+    ///
+    /// # Arguments
+    /// * `request` - The request to send.
+    ///
+    /// # Returns
+    /// A `Result` containing the `Response` or an `ApplicationError`.
     fn send(&self, request: Request) -> Result<Response, ApplicationError> {
         let request = self.encode(request).ok_or_else(|| ApplicationError::transport("could not encode the request"))?;
         self.socket.send(&request[..], 0)?;
@@ -113,6 +140,13 @@ impl Client {
         self.decode(response).ok_or_else(|| ApplicationError::transport("could not encode the request"))
     }
 
+    /// Encodes a `Request` into a JSON string.
+    ///
+    /// # Arguments
+    /// * `request` - The `Request` to encode.
+    ///
+    /// # Returns
+    /// An `Option` containing the JSON string, or `None` if encoding fails.
     fn encode(&self, request: Request) -> Option<String> {
         match serde_json::to_string(&request) {
             Ok(json) => Some(json),
@@ -120,6 +154,13 @@ impl Client {
         }
     }
 
+    /// Decodes a JSON string into a `Response`.
+    ///
+    /// # Arguments
+    /// * `json` - The JSON string to decode.
+    ///
+    /// # Returns
+    /// An `Option` containing the `Response`, or `None` if decoding fails.
     fn decode(&self, json: &str) -> Option<Response> {
         match serde_json::from_str::<Response>(json) {
             Ok(response) => Some(response),

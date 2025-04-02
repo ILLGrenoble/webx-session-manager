@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use super::ApplicationError;
 
+/// The `Settings` struct represents the configuration settings for the WebX Session Manager.
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     logging: LoggingSettings,
@@ -12,12 +13,13 @@ pub struct Settings {
     xorg: XorgSettings,
 }
 
-
+/// The `TransportSettings` struct contains settings related to IPC transport.
 #[derive(Debug, Deserialize, Clone)]
 pub struct TransportSettings {
     ipc: String,
 }
 
+/// The `XorgSettings` struct contains settings related to the Xorg server.
 #[derive(Debug, Deserialize, Clone)]
 pub struct XorgSettings {
     log_path: String,
@@ -28,12 +30,14 @@ pub struct XorgSettings {
     window_manager: String,
 }
 
+/// The `FileLoggingSettings` struct contains settings for file-based logging.
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileLoggingSettings {
     enabled: Option<bool>,
     path: String,
 }
 
+/// The `LoggingSettings` struct contains settings for logging configuration.
 #[derive(Debug, Deserialize, Clone)]
 pub struct LoggingSettings {
     level: String,
@@ -42,6 +46,7 @@ pub struct LoggingSettings {
     format: Option<String>,
 }
 
+/// The `AuthenticationSettings` struct contains settings for user authentication.
 #[derive(Debug, Deserialize, Clone)]
 pub struct AuthenticationSettings {
     service: String,
@@ -118,8 +123,14 @@ impl TransportSettings {
 
 static DEFAULT_CONFIG_PATHS: [&str; 2] = ["/etc/webx/webx-session-manager-config.yml", "./config.yml"];
 
-
 impl Settings {
+    /// Creates a new `Settings` instance by loading configuration from a file or environment variables.
+    ///
+    /// # Arguments
+    /// * `config_path` - The path to the configuration file. If empty, default paths will be used.
+    ///
+    /// # Returns
+    /// A `Result` containing the `Settings` or an `ApplicationError` if the configuration could not be loaded.
     pub fn new(config_path: &str) -> Result<Self, ApplicationError> {
         let config_path = Settings::get_config_path(config_path);
 
@@ -131,23 +142,45 @@ impl Settings {
         settings_raw.try_deserialize().map_err(|error| error.into())
     }
 
-
+    /// Returns the logging settings.
+    ///
+    /// # Returns
+    /// A reference to the `LoggingSettings`.
     pub fn logging(&self) -> &LoggingSettings {
         &self.logging
     }
 
+    /// Returns the transport settings.
+    ///
+    /// # Returns
+    /// A reference to the `TransportSettings`.
     pub fn transport(&self) -> &TransportSettings {
         &self.transport
     }
 
+    /// Returns the authentication settings.
+    ///
+    /// # Returns
+    /// A reference to the `AuthenticationSettings`.
     pub fn authentication(&self) -> &AuthenticationSettings {
         &self.authentication
     }
 
+    /// Returns the Xorg settings.
+    ///
+    /// # Returns
+    /// A reference to the `XorgSettings`.
     pub fn xorg(&self) -> &XorgSettings {
         &self.xorg
     }
 
+    /// Determines the configuration file path to use.
+    ///
+    /// # Arguments
+    /// * `config_path` - The provided configuration file path. If empty, default paths will be checked.
+    ///
+    /// # Returns
+    /// The resolved configuration file path as a string slice.
     fn get_config_path(config_path: &str) -> &str {
         if config_path.is_empty() {
             for path in DEFAULT_CONFIG_PATHS.iter() {
@@ -159,6 +192,13 @@ impl Settings {
         config_path
     }
 
+    /// Validates the settings to ensure they are suitable for running the session manager.
+    ///
+    /// # Returns
+    /// `true` if the settings are valid, otherwise `false`.
+    ///
+    /// # Errors
+    /// Prints error messages to `stderr` for any invalid configuration values.
     pub fn is_valid(&self) -> bool {
         // check that settings are valid for running the session manager
 
@@ -186,7 +226,6 @@ impl Settings {
             return false;
         }
 
-
         if self.xorg.sessions_path.is_empty() {
             eprintln!("Please specify a path for where to store the session files (i.e. /run/webx/sessions");
             return false;
@@ -206,7 +245,6 @@ impl Settings {
             eprintln!("Please specify a path to store the session logs i.e. /var/log/webx/webx-session-manager/sessions");
             return false;
         }
-
 
         true
     }

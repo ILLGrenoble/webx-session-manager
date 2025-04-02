@@ -3,6 +3,7 @@ use std::fmt;
 use nix::unistd::User;
 use users::get_user_groups;
 
+/// The `Account` struct represents a user account in the system.
 pub struct Account {
     username: String,
     home: String,
@@ -12,6 +13,17 @@ pub struct Account {
 }
 
 impl Account {
+    /// Creates a new `Account` instance.
+    ///
+    /// # Arguments
+    /// * `username` - The username of the account.
+    /// * `home` - The home directory of the account.
+    /// * `uid` - The user ID of the account.
+    /// * `gid` - The group ID of the account.
+    /// * `groups` - The list of group IDs the account belongs to.
+    ///
+    /// # Returns
+    /// A new `Account` instance.
     pub fn new(username: &str, home: &str, uid: u32, gid: u32, groups: Vec<u32>) -> Self {
         Account {
             username: username.into(),
@@ -22,26 +34,38 @@ impl Account {
         }
     }
 
+    /// Returns the username of the account.
     pub fn username(&self) -> &str {
         &self.username
     }
 
+    /// Returns the home directory of the account.
     pub fn home(&self) -> &str {
         &self.home
     }
 
+    /// Returns the user ID of the account.
     pub fn uid(&self) -> u32 {
         self.uid
     }
 
+    /// Returns the group ID of the account.
     pub fn gid(&self) -> u32 {
         self.gid
     }
 
+    /// Returns the list of group IDs the account belongs to.
     pub fn groups(&self) -> &[u32] {
         &self.groups
     }
 
+    /// Creates an `Account` instance from a `User`.
+    ///
+    /// # Arguments
+    /// * `user` - The `User` to convert.
+    ///
+    /// # Returns
+    /// An `Option` containing the `Account` or `None` if the conversion fails.
     pub fn from_user(user: User) -> Option<Account> {
         let uid = user.uid.as_raw();
         let gid = user.gid.as_raw();
@@ -68,8 +92,8 @@ impl Account {
     }
 }
 
-
 impl fmt::Display for Account {
+    /// Formats the `Account` for display.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "username = {}, home = {} uid = {}, gid = {}, groups = {:?}", self.username, self.home, self.uid, self.gid, &self.groups)
     }

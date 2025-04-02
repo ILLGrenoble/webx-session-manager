@@ -15,6 +15,8 @@ use crate::fs::chown;
 
 use super::{SessionService, XorgService};
 
+/// The `Server` struct represents the WebX Session Manager server, which handles
+/// requests for user authentication, session creation, and session management.
 pub struct Server {
     context: zmq::Context,
     session_service: SessionService,
@@ -23,6 +25,14 @@ pub struct Server {
 }
 
 impl Server {
+    /// Creates a new instance of the `Server`.
+    ///
+    /// # Arguments
+    /// * `settings` - The configuration settings for the server.
+    /// * `context` - The ZeroMQ context for socket communication.
+    ///
+    /// # Returns
+    /// A new `Server` instance.
     pub fn new(settings: Settings, context: zmq::Context) -> Self {
         let authenticator = Authenticator::new(settings.authentication().service().to_owned());
         let xorg_service = XorgService::new(settings.xorg().to_owned());
@@ -37,7 +47,13 @@ impl Server {
         }
     }
 
-    /// Launch the server and start listening for requests
+    /// Launches the server and starts listening for requests.
+    ///
+    /// # Arguments
+    /// * `stop_signal` - An atomic boolean used to signal the server to stop.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     pub fn run(&mut self, stop_signal: Arc<AtomicBool>) -> Result<(), ApplicationError> {
         let rep_socket = self.create_rep_socket()?;
 
@@ -65,6 +81,10 @@ impl Server {
         Ok(())
     }
 
+    /// Retrieves the user associated with the IPC socket.
+    ///
+    /// # Returns
+    /// A `Result` containing the `User` or an `ApplicationError`.
     fn get_socket_user(&self) -> Result<User, ApplicationError> {
         match User::from_name("webx") {
             Ok(Some(user)) => Ok(user),
@@ -72,6 +92,10 @@ impl Server {
         }
     }
 
+    /// Cleans up resources used by the server, including IPC socket files and sessions (Xorg and window manager processes).
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     fn clean_up(&self) -> Result<(), ApplicationError> {
         debug!("Deleting ipc socket descriptor");
         fs::remove_file(&self.ipc)?;
@@ -81,6 +105,10 @@ impl Server {
         Ok(())
     }
 
+    /// Creates a ZeroMQ reply socket for handling client requests.
+    ///
+    /// # Returns
+    /// A `Result` containing the `zmq::Socket` or an `ApplicationError`.
     fn create_rep_socket(&self) -> Result<zmq::Socket, ApplicationError> {
         let address = format!("ipc://{}", &self.ipc);
         let socket = self.context.socket(zmq::REP)?;
@@ -101,6 +129,10 @@ impl Server {
         Ok(socket)
     }
 
+    /// Handles incoming requests from the reply socket.
+    ///
+    /// # Arguments
+    /// * `rep_socket` - The ZeroMQ reply socket.
     fn handle_request(&self, rep_socket: &zmq::Socket) {
         let mut message = zmq::Message::new();
 
@@ -127,12 +159,22 @@ impl Server {
         }
     }
 
+    /// Handles unknown requests by sending an error response.
+    ///
+    /// # Arguments
+    /// * `rep_socket` - The ZeroMQ reply socket.
     fn handle_unknown_request(&self, rep_socket: &zmq::Socket) {
         if let Err(error) = rep_socket.send("unknown request", 0) {
             error!("failed to send response message: {}", error);
         }
     }
 
+    /// Handles login requests by authenticating the user and creating a session.
+    ///
+    /// # Arguments
+    /// * `rep_socket` - The ZeroMQ reply socket.
+    /// * `credentials` - The user's credentials.
+    /// * `resolution` - The screen resolution for the session.
     fn handle_login_request(&self,
                             rep_socket: &zmq::Socket,
                             credentials: Credentials,
@@ -155,7 +197,10 @@ impl Server {
     }
 
     
-
+    /// Handles requests to list all active sessions.
+    ///
+    /// # Arguments
+    /// * `rep_socket` - The ZeroMQ reply socket.
     fn handle_who_request(&self, rep_socket: &zmq::Socket) {
         debug!("Listing sessions");
         let sessions = self.session_service.get_all().unwrap_or_default();
@@ -167,6 +212,11 @@ impl Server {
         }
     }
 
+    /// Handles logout requests by terminating the specified session.
+    ///
+    /// # Arguments
+    /// * `rep_socket` - The ZeroMQ reply socket.
+    /// * `id` - The session ID to terminate.
     fn handle_logout_request(&self, rep_socket: &zmq::Socket, id: String) {
         let response = match Uuid::from_str(&id) {
             Ok(id) => match self.session_service.kill_by_id(id) {

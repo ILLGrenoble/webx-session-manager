@@ -12,17 +12,30 @@ use uuid::Uuid;
 use crate::common::{Account, ApplicationError, ProcessHandle, ScreenResolution, Session, XorgSettings};
 use crate::fs::{chmod, chown, mkdir, touch};
 
+/// The `XorgService` struct provides functionality for managing Xorg sessions,
+/// including creating, cleaning up, and launching Xorg servers and window managers.
 pub struct XorgService {
     settings: XorgSettings,
     sessions: Mutex<Vec<Session>>,
 }
 
 impl XorgService {
+    /// Creates a new `XorgService` instance.
+    ///
+    /// # Arguments
+    /// * `settings` - The Xorg settings to use for managing sessions.
+    ///
+    /// # Returns
+    /// A new `XorgService` instance.
     pub fn new(settings: XorgSettings) -> Self {
         let sessions = Mutex::new(Vec::new());
         Self { settings, sessions }
     }
 
+    /// Retrieves all active sessions.
+    ///
+    /// # Returns
+    /// An `Option` containing a vector of `Session` instances, or `None` if the sessions cannot be retrieved.
     pub fn get_all_sessions(&self) -> Option<Vec<Session>> {
         if let Ok(sessions) = self.sessions.lock() {
             info!("Sessions: {}", sessions.len());
@@ -31,7 +44,13 @@ impl XorgService {
         None
     }
 
-    /// get the display for a given user
+    /// Retrieves the session for a specific user by their user ID.
+    ///
+    /// # Arguments
+    /// * `uid` - The user ID to search for.
+    ///
+    /// # Returns
+    /// An `Option` containing the `Session` if found, or `None` otherwise.
     pub fn get_session_for_user(&self, uid: u32) -> Option<Session> {
         debug!("Finding session for user id: {}", uid);
         if let Ok(sessions) = self.sessions.lock() {
@@ -43,7 +62,10 @@ impl XorgService {
         None
     }
 
-    /// clean up zombie sessions
+    /// Cleans up zombie sessions by removing sessions whose Xorg processes are no longer running.
+    ///
+    /// # Returns
+    /// The number of sessions cleaned up.
     pub fn clean_up(&self) -> u32 {
         let mut cleaned_up_total = 0;
         if let Ok(mut sessions) = self.sessions.lock() {
@@ -60,8 +82,10 @@ impl XorgService {
         cleaned_up_total
     }
 
-    // Generate an xauth cookie
-    // It must be a string of length 32 that can only contain hex values
+    /// Generates a random Xauth cookie for authentication.
+    /// The cookie is a 32-character string consisting of hex values.
+    /// # Returns
+    /// A string containing the generated cookie.
     fn create_cookie(&self) -> String {
         let characters: &[u8] = b"ABCDEF0123456789";
         let mut rng = rand::rng();
@@ -74,6 +98,15 @@ impl XorgService {
             .collect()
     }
 
+    /// Creates an Xauth token for a specific display and user.
+    ///
+    /// # Arguments
+    /// * `display` - The display number.
+    /// * `account` - The user account for which the token is created.
+    /// * `webx_user` - The WebX system user.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     fn create_token(&self, display: u32, account: &Account, webx_user: &User) -> Result<(), ApplicationError> {
         debug!("Creating xauth token for display {} and user {}", display, account.username());
         let cookie = self.create_cookie();
@@ -98,6 +131,17 @@ impl XorgService {
         Ok(())
     }
 
+    /// Spawns an Xorg server process for a session.
+    ///
+    /// # Arguments
+    /// * `session_id` - The unique identifier for the session.
+    /// * `display` - The display number.
+    /// * `resolution` - The screen resolution for the session.
+    /// * `account` - The user account for the session.
+    /// * `environment` - The environment variables for the session.
+    ///
+    /// # Returns
+    /// A `Result` containing the `ProcessHandle` for the Xorg server or an `ApplicationError`.
     fn spawn_x_server(
         &self,
         session_id: &Uuid,
@@ -160,6 +204,16 @@ impl XorgService {
         ProcessHandle::new(&mut command)
     }
 
+    /// Spawns a window manager process for a session.
+    ///
+    /// # Arguments
+    /// * `session_id` - The unique identifier for the session.
+    /// * `display` - The display number.
+    /// * `account` - The user account for the session.
+    /// * `environment` - The environment variables for the session.
+    ///
+    /// # Returns
+    /// A `Result` containing the `ProcessHandle` for the window manager or an `ApplicationError`.
     fn spawn_window_manager(
         &self,
         session_id: &Uuid,
@@ -196,6 +250,16 @@ impl XorgService {
         ProcessHandle::new(&mut command)
     }
 
+    /// Creates a directory for a session with the specified permissions and ownership.
+    ///
+    /// # Arguments
+    /// * `path` - The path to the directory.
+    /// * `mode` - The permissions for the directory.
+    /// * `uid` - The user ID to set as the owner.
+    /// * `gid` - The group ID to set as the owner.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     fn create_session_directory<S>(&self, path: S, mode: u32, uid: u32, gid: u32) -> Result<(), ApplicationError> where S: AsRef<str> {
         let path = path.as_ref();
         mkdir(path)?;
@@ -205,6 +269,16 @@ impl XorgService {
         Ok(())
     }
 
+    /// Creates a user-specific file with the specified permissions and ownership.
+    ///
+    /// # Arguments
+    /// * `path` - The path to the file.
+    /// * `mode` - The permissions for the file.
+    /// * `uid` - The user ID to set as the owner.
+    /// * `gid` - The group ID to set as the owner.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     fn create_user_file<S>(&self, path: S, mode: u32, uid: u32, gid: u32) -> Result<(), ApplicationError> where S: AsRef<str> {
         let path = path.as_ref();
 
@@ -219,7 +293,14 @@ impl XorgService {
         Ok(())
     }
 
-    // create the required directories and files
+    /// Creates the required directories and files for a user session.
+    ///
+    /// # Arguments
+    /// * `account` - The user account for the session.
+    /// * `webx_user` - The WebX system user.
+    ///
+    /// # Returns
+    /// A `Result` indicating success or an `ApplicationError`.
     pub fn create_user_files(&self, account: &Account, webx_user: &User) -> Result<(), ApplicationError> {
         debug!("Creating user files for user: {}", account.username());
         let gid = webx_user.gid.as_raw();
@@ -239,6 +320,13 @@ impl XorgService {
         Ok(())
     }
 
+    /// Retrieves a session by its unique identifier.
+    ///
+    /// # Arguments
+    /// * `id` - The unique identifier of the session.
+    ///
+    /// # Returns
+    /// An `Option` containing the `Session` if found, or `None` otherwise.
     pub fn get_by_id(&self, id: &Uuid) -> Option<Session>{
         if let Some(sessions) = self.get_all_sessions() {
             let session = sessions
@@ -249,7 +337,16 @@ impl XorgService {
         None
     }
 
-    // create the xauth token and launch the x11 server and window manager
+    /// Creates an Xauth token, launches the Xorg server, and starts the window manager for a session.
+    ///
+    /// # Arguments
+    /// * `account` - The user account for the session.
+    /// * `webx_user` - The WebX system user.
+    /// * `resolution` - The screen resolution for the session.
+    /// * `environment` - The environment variables for the session.
+    ///
+    /// # Returns
+    /// A `Result` containing the created `Session` or an `ApplicationError`.
     pub fn execute(
         &self,
         account: &Account,
@@ -302,6 +399,13 @@ impl XorgService {
         return Err(ApplicationError::session(format!("Could not start session for user: {}", account)));
     }
 
+    /// Finds the next available display number for a session.
+    ///
+    /// # Arguments
+    /// * `id` - The starting display number to check.
+    ///
+    /// # Returns
+    /// A `Result` containing the next available display number or an `ApplicationError`.
     fn get_next_available_display(&self, id: u32) -> Result<u32, ApplicationError> {
         let lock_path = self.settings.lock_path();
         let path = format!("{}/.X{}-lock", lock_path, id);
@@ -312,6 +416,10 @@ impl XorgService {
         }
     }
 
+    /// Retrieves the next available display number starting from the configured offset.
+    ///
+    /// # Returns
+    /// A `Result` containing the next available display number or an `ApplicationError`.
     fn get_next_display(&self) -> Result<u32, ApplicationError> {
         let display_offset = self.settings.display_offset();
         self.get_next_available_display(display_offset)

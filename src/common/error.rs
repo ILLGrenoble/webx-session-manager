@@ -2,13 +2,14 @@ use std::{fmt, io};
 
 use config::ConfigError;
 
+/// The `ApplicationError` struct represents an error that can occur in the WebX Session Manager.
 #[derive(Clone, Debug)]
 pub struct ApplicationError {
     message: String,
     kind: ApplicationErrorKind,
 }
 
-
+/// The `ApplicationErrorKind` enum categorizes the types of errors that can occur.
 #[derive(Clone, Copy, Debug)]
 pub enum ApplicationErrorKind {
     Configuration,
@@ -19,6 +20,14 @@ pub enum ApplicationErrorKind {
 }
 
 impl ApplicationError {
+    /// Creates a new `ApplicationError` with the specified message and kind.
+    ///
+    /// # Arguments
+    /// * `message` - The error message.
+    /// * `kind` - The kind of error.
+    ///
+    /// # Returns
+    /// A new `ApplicationError` instance.
     fn new(message: impl AsRef<str>, kind: ApplicationErrorKind) -> Self {
         Self {
             message: message.as_ref().to_string(),
@@ -26,6 +35,13 @@ impl ApplicationError {
         }
     }
 
+    /// Creates an authentication error.
+    ///
+    /// # Arguments
+    /// * `explanation` - The explanation for the error.
+    ///
+    /// # Returns
+    /// An `ApplicationError` instance.
     pub fn authentication(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
@@ -33,6 +49,13 @@ impl ApplicationError {
         )
     }
 
+    /// Creates an environment error.
+    ///
+    /// # Arguments
+    /// * `explanation` - The explanation for the error.
+    ///
+    /// # Returns
+    /// An `ApplicationError` instance.
     pub fn environment(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
@@ -40,6 +63,13 @@ impl ApplicationError {
         )
     }
 
+    /// Creates a session error.
+    ///
+    /// # Arguments
+    /// * `explanation` - The explanation for the error.
+    ///
+    /// # Returns
+    /// An `ApplicationError` instance.
     pub fn session(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
@@ -47,6 +77,13 @@ impl ApplicationError {
         )
     }
 
+    /// Creates a transport error.
+    ///
+    /// # Arguments
+    /// * `explanation` - The explanation for the error.
+    ///
+    /// # Returns
+    /// An `ApplicationError` instance.
     pub fn transport(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
@@ -54,6 +91,13 @@ impl ApplicationError {
         )
     }
 
+    /// Creates a configuration error.
+    ///
+    /// # Arguments
+    /// * `explanation` - The explanation for the error.
+    ///
+    /// # Returns
+    /// An `ApplicationError` instance.
     pub fn configuration(explanation: impl AsRef<str>) -> Self {
         Self::new(
             explanation,
@@ -61,20 +105,21 @@ impl ApplicationError {
         )
     }
 
+    /// Returns the error message.
     pub fn message(&self) -> &str {
         &self.message
     }
 }
 
-
 impl fmt::Display for ApplicationError {
+    /// Formats the `ApplicationError` for display.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{}; {}", self.kind, self.message)
     }
 }
 
-
 impl fmt::Display for ApplicationErrorKind {
+    /// Formats the `ApplicationErrorKind` for display.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = match self {
             ApplicationErrorKind::Authentication => "invalid credentials or bad account",
@@ -86,7 +131,6 @@ impl fmt::Display for ApplicationErrorKind {
         write!(f, "{}", string)
     }
 }
-
 
 impl From<pam_client::Error> for ApplicationError {
     fn from(error: pam_client::Error) -> Self {
@@ -107,7 +151,6 @@ impl From<zmq::Error> for ApplicationError {
         ApplicationError::transport(message)
     }
 }
-
 
 impl From<ConfigError> for ApplicationError {
     fn from(error: ConfigError) -> Self {

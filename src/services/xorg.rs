@@ -4,7 +4,7 @@ use std::process::Command;
 use std::sync::Mutex;
 use std::{thread, time};
 
-use nix::unistd::User;
+use nix::unistd::{User, Gid, Uid, setgroups, setgid, setuid};
 use pam_client::env_list::EnvList;
 use rand::Rng;
 use uuid::Uuid;
@@ -173,7 +173,6 @@ impl XorgService {
         let (screen_width, screen_height) = resolution.split();
         let mut command = Command::new("Xorg");
 
-
         command
             .args([
                 display.as_str(),
@@ -194,14 +193,33 @@ impl XorgService {
             .envs(environment.iter_tuples())
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
-            .stderr(std::process::Stdio::from(stderr_file))
-            .uid(account.uid())
-            .gid(account.gid())
-            .groups(account.groups());
+            .stderr(std::process::Stdio::from(stderr_file));
 
+        // Convert u32 groups to Gid and set supplementary groups
+        let gids: Vec<Gid> = account.groups().iter().map(|&g| Gid::from_raw(g)).collect();
+        let uid = Uid::from_raw(account.uid());
+        let gid = Gid::from_raw(account.gid());
+
+
+        unsafe {
+            // The `pre_exec` function is used to set the user and group IDs before executing the command
+            // This is necessary to ensure the remote desktop runs with the correct permissions
+            // and can access the user's home directory and other resources.
+            // Alternative the the .groups method of Command could be used but this requires the nightly/unstable version of rust
+            command
+                .pre_exec(move || {
+                    setgroups(&gids)?;
+                    setgid(gid)?;
+                    setuid(uid)?;
+                    Ok(())
+                });
+        }
 
         debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
-        ProcessHandle::new(&mut command)
+        ProcessHandle::new(&mut command).map_err(|e| {
+            error!("Failed to spawn Xorg server process: {}", e);
+            ApplicationError::session(format!("Failed to spawn Xorg server: {}", e))
+        })
     }
 
     /// Spawns a window manager process for a session.
@@ -241,13 +259,33 @@ impl XorgService {
             .envs(environment.iter_tuples())
             .current_dir(account.home())
             .stdout(std::process::Stdio::from(stdout_file))
-            .stderr(std::process::Stdio::from(stderr_file))
-            .groups(account.groups())
-            .uid(account.uid())
-            .gid(account.gid());
+            .stderr(std::process::Stdio::from(stderr_file));
+
+        // Convert u32 groups to Gid and set supplementary groups
+        let gids: Vec<Gid> = account.groups().iter().map(|&g| Gid::from_raw(g)).collect();
+        let uid = Uid::from_raw(account.uid());
+        let gid = Gid::from_raw(account.gid());
+
+        unsafe {
+            // The `pre_exec` function is used to set the user and group IDs before executing the command
+            // This is necessary to ensure the remote desktop runs with the correct permissions
+            // and can access the user's home directory and other resources.
+            // Alternative the the .groups method of Command could be used but this requires the nightly/unstable version of rust
+            command
+                .pre_exec(move || {
+                    setgroups(&gids)?;
+                    setgid(gid)?;
+                    setuid(uid)?;
+
+                    Ok(())
+                });
+        }            
 
         debug!("Spawning command: {}", format!("{:?}", command).replace('\"', ""));
-        ProcessHandle::new(&mut command)
+        ProcessHandle::new(&mut command).map_err(|e| {
+            error!("Failed to spawn window manager process: {}", e);
+            ApplicationError::session(format!("Failed to spawn window manager: {}", e))
+        })
     }
 
     /// Creates a directory for a session with the specified permissions and ownership.

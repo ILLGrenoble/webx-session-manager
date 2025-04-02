@@ -1,4 +1,3 @@
-#![feature(setgroups)]
 #[macro_use]
 extern crate log;
 extern crate pam_client2 as pam_client;

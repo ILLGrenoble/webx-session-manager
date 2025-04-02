@@ -1,5 +1,5 @@
 ## -- Debian 11
-FROM rustlang/rust:nightly-bullseye-slim as debian11
+FROM rust:1-slim-bullseye AS debian11
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN cargo deb
 
 
 ## -- Debian 12
-FROM rustlang/rust:nightly-bookworm-slim as debian12
+FROM rust:1-slim-bookworm AS debian12
 
 WORKDIR /app
 
@@ -43,7 +43,6 @@ RUN curl https://sh.rustup.rs -sSf > /tmp/rustup-init.sh \
 
 COPY . .
 
-RUN ~/.cargo/bin/rustup default nightly
 RUN ~/.cargo/bin/cargo install cargo-deb
 RUN ~/.cargo/bin/cargo deb
 
@@ -65,7 +64,6 @@ RUN curl https://sh.rustup.rs -sSf > /tmp/rustup-init.sh \
 
 COPY . .
 
-RUN ~/.cargo/bin/rustup default nightly
 RUN ~/.cargo/bin/cargo install cargo-deb
 RUN ~/.cargo/bin/cargo deb
 
@@ -87,7 +85,6 @@ RUN curl https://sh.rustup.rs -sSf > /tmp/rustup-init.sh \
 
 COPY . .
 
-RUN ~/.cargo/bin/rustup default nightly
 RUN ~/.cargo/bin/cargo install cargo-deb
 RUN ~/.cargo/bin/cargo deb
 

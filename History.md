@@ -1,3 +1,11 @@
+1.0.0 02/04/2025
+================
+ * Use of pre_exec in Command spawning to modify uid, gid and groups of process (avoids use of nightly rust version)
+ * Full code documentation
+ * Build release versions (debian packages) on Ubuntu20 and ARM architecture
+ * Optional logging to file
+ * Update dependencies
+
 0.1.4 11/02/2025
 ================
  * Build releases versions also for Debian 12 and Ubuntu 24
